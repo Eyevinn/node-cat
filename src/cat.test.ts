@@ -15,7 +15,7 @@ describe('CAT', () => {
     expect(cwt.claims).toEqual(claims);
   });
 
-  test('can MAC a CWT object', async () => {
+  test('can MAC a CAT object', async () => {
     const claims = {
       iss: 'coap://as.example.com',
       sub: 'jonas',
@@ -25,7 +25,7 @@ describe('CAT', () => {
       iat: 1443944944,
       cti: '0b71'
     };
-    const cwt = new CommonAccessToken(claims);
+    const cat = new CommonAccessToken(claims);
     const key = {
       k: Buffer.from(
         '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
@@ -33,18 +33,18 @@ describe('CAT', () => {
       ),
       kid: 'Symmetric256'
     };
-    const mac = await cwt.mac(key, 'HS256/64');
+    const mac = await cat.mac(key, 'HS256/64');
     expect(mac.raw).toBeDefined();
     const macHex = mac.raw?.toString('hex');
     expect(macHex).toEqual(
       'd18443a10104a1044c53796d6d657472696332353678a66439303130336137303137353633366636313730336132663266363137333265363537383631366437303663363532653633366636643032363536613666366536313733303337383138363336663631373033613266326636633639363736383734326536353738363136643730366336353265363336663664303431613536313261656230303531613536313064396630303631613536313064396630303734323062373148ab8293ffa4166958'
     );
     const token = Buffer.from(macHex!, 'hex');
-    const parsed = await cwt.parse(token, key);
+    const parsed = await cat.parse(token, key);
     expect(parsed.claims).toEqual(claims);
   });
 
-  test('can sign a CWT object', async () => {
+  test('can sign a CAT object', async () => {
     const claims = {
       iss: 'coap://as.example.com',
       sub: 'jonas',
@@ -54,7 +54,7 @@ describe('CAT', () => {
       iat: 1443944944,
       cti: '0b71'
     };
-    const cwt = new CommonAccessToken(claims);
+    const cat = new CommonAccessToken(claims);
     const signKey = {
       d: Buffer.from(
         '6c1382765aec5358f117733d281c1c7bdc39884d04a45a1e6c67c858bc206c19',
@@ -62,7 +62,7 @@ describe('CAT', () => {
       ),
       kid: 'AsymmetricECDSA256'
     };
-    const signed = await cwt.sign(signKey, 'ES256');
+    const signed = await cat.sign(signKey, 'ES256');
     const signedHex = signed.raw?.toString('hex');
     const token = Buffer.from(signedHex!, 'hex');
     const verifyKey = {
@@ -76,7 +76,7 @@ describe('CAT', () => {
       ),
       kid: 'AsymmetricECDSA256'
     };
-    const verified = await cwt.verify(token, verifyKey);
+    const verified = await cat.verify(token, verifyKey);
     expect(verified.claims).toEqual(claims);
   });
 });

@@ -8,7 +8,23 @@ const claimsToLabels: { [key: string]: number } = {
   exp: 4, // 6 tag value 1
   nbf: 5, // 6 tag value 1
   iat: 6, // 6 tag value 1
-  cti: 7 // 2
+  cti: 7, // 2,
+  cnf: 8,
+  catreplay: 308,
+  catpor: 309,
+  catv: 310,
+  catnip: 311,
+  catu: 312,
+  catm: 313,
+  catalpn: 314,
+  cath: 315,
+  catgeoiso3166: 316,
+  catgeocoord: 317,
+  cattpk: 319,
+  catifdata: 320,
+  catadpop: 321,
+  catif: 322,
+  catr: 323
 };
 
 const labelsToClaim: { [key: number]: string } = {
@@ -18,15 +34,33 @@ const labelsToClaim: { [key: number]: string } = {
   4: 'exp',
   5: 'nbf',
   6: 'iat',
-  7: 'cti'
+  7: 'cti',
+  8: 'cnf',
+  308: 'catreplay',
+  309: 'catpor',
+  310: 'catv',
+  311: 'catnip',
+  312: 'catu',
+  313: 'catm',
+  314: 'catalpn',
+  315: 'cath',
+  316: 'catgeoiso3166',
+  317: 'catgeocoord',
+  319: 'cattpk',
+  320: 'catifdata',
+  321: 'catadpop',
+  322: 'catif',
+  323: 'catr'
 };
 
 const claimTransform: { [key: string]: (value: string) => Buffer } = {
-  cti: (value) => Buffer.from(value, 'hex')
+  cti: (value) => Buffer.from(value, 'hex'),
+  cattpk: (value) => Buffer.from(value, 'hex')
 };
 
 const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
-  cti: (value: Buffer) => value.toString('hex')
+  cti: (value: Buffer) => value.toString('hex'),
+  cattpk: (value: Buffer) => value.toString('hex')
 };
 
 export type CommonAccessTokenClaims = { [key: string]: string | number };
