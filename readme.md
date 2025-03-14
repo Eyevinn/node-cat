@@ -78,10 +78,15 @@ const validator = new CAT({
 });
 const base64encoded =
   '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY'
-const cat = await validator.validate(base64encoded, 'mac', {
-  kid: 'Symmetric256'
-});
-console.log(cat.claims);
+try {
+  const cat = await validator.validate(base64encoded, 'mac', 'coap://as.example.com', {
+    kid: 'Symmetric256'
+  });
+  console.log(cat.claims);
+} catch (err) {
+  // Not valid
+  console.log(err);
+}
 ```
 
 ## Development

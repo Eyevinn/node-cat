@@ -29,6 +29,7 @@ export class CAT {
   public async validate(
     token: string,
     type: CatValidationTypes,
+    issuer: string,
     opts?: CatValidationOptions
   ) {
     const tokenWithoutPadding = token.trim();
@@ -41,10 +42,14 @@ export class CAT {
       if (!key) {
         throw new Error('Key not found');
       }
-      cat = CommonAccessTokenFactory.fromMacedToken(tokenWithoutPadding, {
+      cat = await CommonAccessTokenFactory.fromMacedToken(tokenWithoutPadding, {
         k: key,
         kid: opts.kid
       });
+      const valid = await cat.isValid(issuer);
+      if (!valid) {
+        throw new Error(`Invalid token: ${cat.reason}`);
+      }
       return cat;
     }
   }

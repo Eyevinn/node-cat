@@ -86,6 +86,7 @@ export interface CWTVerifierKey {
 export class CommonAccessToken {
   private payload: Map<number, string | number | Buffer>;
   private data?: Buffer;
+  private errMsg?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
     this.payload = new Map<number, string | number>();
@@ -150,9 +151,25 @@ export class CommonAccessToken {
     return this;
   }
 
+  public async isValid(issuer: string): Promise<boolean> {
+    if (!this.payload.get(claimsToLabels['iss'])) {
+      this.errMsg = 'Missing issuer';
+      return false;
+    }
+    if (this.payload.get(claimsToLabels['iss']) !== issuer) {
+      this.errMsg = 'Issuer not matching';
+      return false;
+    }
+    return true;
+  }
+
   get(key: string) {
     const theKey = claimsToLabels[key] ? claimsToLabels[key] : parseInt(key);
     return this.payload.get(theKey);
+  }
+
+  get reason() {
+    return this.errMsg;
   }
 
   get claims() {
