@@ -170,4 +170,31 @@ export class CommonAccessToken {
   get raw() {
     return this.data;
   }
+
+  get base64() {
+    return this.data?.toString('base64');
+  }
+}
+
+export class CommonAccessTokenFactory {
+  public static async fromSignedToken(
+    base64encoded: string,
+    key: CWTVerifierKey
+  ): Promise<CommonAccessToken> {
+    const token = Buffer.from(base64encoded, 'base64');
+    const cat = new CommonAccessToken({});
+    const verified = await cat.verify(token, key);
+    return verified;
+  }
+
+  public static async fromMacedToken(
+    base64encoded: string,
+    key: CWTDecryptionKey,
+    alg: string
+  ): Promise<CommonAccessToken> {
+    const token = Buffer.from(base64encoded, 'base64');
+    const cat = new CommonAccessToken({});
+    const parsed = await cat.parse(token, key);
+    return parsed;
+  }
 }
