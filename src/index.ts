@@ -1,4 +1,1 @@
-function helloWorld(): void {
-  console.log('Hello, World!');
-}
-helloWorld();
+export { CommonAccessToken } from './cat';
