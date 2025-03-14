@@ -121,8 +121,7 @@ describe('CAT', () => {
     };
     const cat = await CommonAccessTokenFactory.fromMacedToken(
       base64encoded,
-      key,
-      'HS256'
+      key
     );
     expect(cat.claims).toEqual({
       iss: 'coap://as.example.com',

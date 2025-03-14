@@ -1,37 +1,86 @@
 <h1 align="center">
-  Project Name or Logo
+  Node library for Common Access Token
 </h1>
 
 <div align="center">
-  project name - quick salespitch why this is awesome. 
-  <br />
-  <br />
-  :book: <b><a href="https://eyevinn.github.io/{{repo-name}}/">Read the documentation (github pages)</a></b> :eyes:
+  Node library for Common Access Token (CTA-5007)
   <br />
 </div>
 
 <div align="center">
 <br />
 
-[![npm](https://img.shields.io/npm/v/@eyevinn/{{repo-name}}?style=flat-square)](https://www.npmjs.com/package/@eyevinn/{{repo-name}})
-[![github release](https://img.shields.io/github/v/release/Eyevinn/{{repo-name}}?style=flat-square)](https://github.com/Eyevinn/{{repo-name}}/releases)
-[![license](https://img.shields.io/github/license/eyevinn/{{repo-name}}.svg?style=flat-square)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@eyevinn/node-cat?style=flat-square)](https://www.npmjs.com/package/@eyevinn/node-cat)
+[![github release](https://img.shields.io/github/v/release/Eyevinn/node-cat?style=flat-square)](https://github.com/Eyevinn/node-cat/releases)
+[![license](https://img.shields.io/github/license/eyevinn/node-cat.svg?style=flat-square)](LICENSE)
 
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/eyevinn/{{repo-name}}/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/eyevinn/node-cat/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 [![made with hearth by Eyevinn](https://img.shields.io/badge/made%20with%20%E2%99%A5%20by-Eyevinn-59cbe8.svg?style=flat-square)](https://github.com/eyevinn)
 [![Slack](http://slack.streamingtech.se/badge.svg)](http://slack.streamingtech.se)
 
 </div>
 
-<!-- Add a description of the project here -->
+This is a Node library for generating and validating Common Access Tokens (CTA-5007)
 
 ## Requirements
 
-<!--Add any external project dependencies such as node.js version etc here -->
+- Node version 22+
 
 ## Installation / Usage
 
-<!--Add clear instructions on how to use the project here -->
+```bash
+% npm install --save @eyevinn/cat
+```
+
+### Generate token
+
+```javascript
+import { CAT } from '@eyevinn/cat';
+
+const generator = new CAT({
+  keys: {
+    Symmetric256: Buffer.from(
+      '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+      'hex'
+    )
+  }
+});
+const base64encoded = await generator.generate(
+  {
+    iss: 'coap://as.example.com',
+    sub: 'jonas',
+    aud: 'coap://light.example.com',
+    exp: 1444064944,
+    nbf: 1443944944,
+    iat: 1443944944,
+    cti: '0b71'
+  },
+  {
+    type: 'mac',
+    alg: 'HS256',
+    kid: 'Symmetric256'
+  }
+);
+```
+
+### Verify token
+
+```javascript
+import { CAT } from '@eyevinn/cat';
+
+const validator = new CAT({
+  keys: {
+    Symmetric256: Buffer.from(
+      '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+      'hex'
+    )
+  }
+});
+const cat = await validator.validate(base64encoded!, 'mac', {
+  kid: 'Symmetric256'
+});
+console.log(cat.claims);
+```
 
 ## Development
 

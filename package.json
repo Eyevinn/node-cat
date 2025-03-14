@@ -1,7 +1,7 @@
 {
-  "name": "@eyevinn/typescript-library",
+  "name": "@eyevinn/cat",
   "version": "1.0.0",
-  "description": "The default typescript-library template for eyevinn projects",
+  "description": "Node library for generating and validating Common Access Tokens (CTA-5007)",
   "main": "src/index.ts",
   "scripts": {
     "test": "jest",

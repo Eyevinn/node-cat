@@ -189,8 +189,7 @@ export class CommonAccessTokenFactory {
 
   public static async fromMacedToken(
     base64encoded: string,
-    key: CWTDecryptionKey,
-    alg: string
+    key: CWTDecryptionKey
   ): Promise<CommonAccessToken> {
     const token = Buffer.from(base64encoded, 'base64');
     const cat = new CommonAccessToken({});
