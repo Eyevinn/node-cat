@@ -17,13 +17,16 @@ export interface CatGenerateOptions {
 
 export interface CatOptions {
   keys: { [keyid: string]: Buffer };
+  expectCwtTag?: boolean;
 }
 
 export class CAT {
   private keys: { [keyid: string]: Buffer };
+  private expectCwtTag = false;
 
   constructor(opts: CatOptions) {
     this.keys = opts.keys;
+    this.expectCwtTag = opts.expectCwtTag || false;
   }
 
   public async validate(
@@ -42,10 +45,18 @@ export class CAT {
       if (!key) {
         throw new Error('Key not found');
       }
-      cat = await CommonAccessTokenFactory.fromMacedToken(tokenWithoutPadding, {
-        k: key,
-        kid: opts.kid
-      });
+      cat = await CommonAccessTokenFactory.fromMacedToken(
+        tokenWithoutPadding,
+        {
+          k: key,
+          kid: opts.kid
+        },
+        this.expectCwtTag
+      );
+    } else {
+      throw new Error('Unsupported validation type');
+    }
+    if (cat) {
       const valid = await cat.isValid(issuer);
       if (!valid) {
         throw new Error(`Invalid token: ${cat.reason}`);

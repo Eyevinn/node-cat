@@ -63,6 +63,8 @@ const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
   cattpk: (value: Buffer) => value.toString('hex')
 };
 
+const CWT_TAG = 61;
+
 export type CommonAccessTokenClaims = { [key: string]: string | number };
 
 export interface CWTEncryptionKey {
@@ -83,22 +85,27 @@ export interface CWTVerifierKey {
   kid: string;
 }
 
+function updateMapFromClaims(
+  map: Map<number, string | number | Buffer>,
+  claims: CommonAccessTokenClaims
+) {
+  for (const param in claims) {
+    const key = claimsToLabels[param] ? claimsToLabels[param] : parseInt(param);
+    const value = claimTransform[param]
+      ? claimTransform[param](claims[param] as string)
+      : claims[param];
+    map.set(key, value);
+  }
+}
+
 export class CommonAccessToken {
   private payload: Map<number, string | number | Buffer>;
   private data?: Buffer;
   private errMsg?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
-    this.payload = new Map<number, string | number>();
-    for (const param in claims) {
-      const key = claimsToLabels[param]
-        ? claimsToLabels[param]
-        : parseInt(param);
-      const value = claimTransform[param]
-        ? claimTransform[param](claims[param] as string)
-        : claims[param];
-      this.payload.set(key, value);
-    }
+    this.payload = new Map<number, string | number | Buffer>();
+    updateMapFromClaims(this.payload, claims);
   }
 
   public async mac(
@@ -119,10 +126,24 @@ export class CommonAccessToken {
 
   public async parse(
     token: Buffer,
-    key: CWTDecryptionKey
+    key: CWTDecryptionKey,
+    opts?: {
+      expectCwtTag: boolean;
+    }
   ): Promise<CommonAccessToken> {
-    const buf = await cose.mac.read(token, key.k);
-    this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
+    const coseMessage = cbor.decode(token);
+    if (opts?.expectCwtTag && coseMessage.tag !== 61) {
+      throw new Error('Expected CWT tag');
+    }
+    if (coseMessage.tag === CWT_TAG) {
+      const cwt = cbor.encode(coseMessage.value);
+      const buf = await cose.mac.read(cwt, key.k);
+      const json = await cbor.decode(buf);
+      updateMapFromClaims(this.payload, json);
+    } else {
+      const buf = await cose.mac.read(token, key.k);
+      this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
+    }
     return this;
   }
 
@@ -206,11 +227,12 @@ export class CommonAccessTokenFactory {
 
   public static async fromMacedToken(
     base64encoded: string,
-    key: CWTDecryptionKey
+    key: CWTDecryptionKey,
+    expectCwtTag: boolean
   ): Promise<CommonAccessToken> {
     const token = Buffer.from(base64encoded, 'base64');
     const cat = new CommonAccessToken({});
-    const parsed = await cat.parse(token, key);
+    const parsed = await cat.parse(token, key, { expectCwtTag });
     return parsed;
   }
 }
