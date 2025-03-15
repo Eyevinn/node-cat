@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "test": "jest",
+    "test:interop": "INTEROP=true jest",
     "prepare": "husky install",
     "lint": "eslint .",
     "pretty": "prettier --check --ignore-unknown .",
@@ -15,6 +16,8 @@
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
+    "@osaas/client-core": "^0.15.1",
+    "@osaas/client-web": "^0.5.1",
     "@types/cose-js": "^0.8.3",
     "@types/jest": "^29.5.14",
     "@typescript-eslint/eslint-plugin": "^5.51.0",
