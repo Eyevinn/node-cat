@@ -2,17 +2,29 @@
   "name": "@eyevinn/cat",
   "version": "0.1.1",
   "description": "Node library for generating and validating Common Access Tokens (CTA-5007)",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+  ],
   "scripts": {
     "test": "jest",
     "test:interop": "INTEROP=true jest",
     "prepare": "husky install",
     "lint": "eslint .",
+    "build": "tsc -p tsconfig.json",
     "pretty": "prettier --check --ignore-unknown .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "postversion": "git push && git push --tags"
   },
-  "author": "",
+  "author": "Eyevinn Technology AB <info@eyevinn.se>",
+  "homepage": "https://www.eyevinn.se",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eyevinn/node-cat.git"
+  },
   "license": "MIT",
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",

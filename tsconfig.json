@@ -1,6 +1,8 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    "outDir": "./lib",
+
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
     /* Language and Environment */
@@ -12,5 +14,7 @@
     /* Modules */
     "module": "commonjs" /* Specify what module code is generated. */,
     "moduleResolution": "node"
-  }
+  },
+  "exclude": ["**/*.test.ts"],
+  "include": ["./src"],
 }
