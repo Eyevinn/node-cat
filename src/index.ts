@@ -1,6 +1,7 @@
 import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
 
 export { CommonAccessToken } from './cat';
+export { HttpValidator } from './validators/http';
 
 export type CatValidationTypes = 'mac' | 'sign' | 'none';
 
@@ -50,8 +51,9 @@ export interface CatOptions {
  *   },
  * });
  * try {
- *   await validator.validate(base64encoded, 'mac', 'coap://as.example.com', {
- *     kid: 'Symmetric256'
+ *   await validator.validate(base64encoded, 'mac', {
+ *     kid: 'Symmetric256',
+ *     issuer: 'coap://as.example.com'
  *   });
  * } catch (e) {
  *   // Not valid, handle error

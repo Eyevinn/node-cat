@@ -57,6 +57,84 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 % npm install --save @eyevinn/cat
 ```
 
+### Validate CTA Common Access Token in HTTP incoming message
+
+```javascript
+import { HttpValidator } from '@eyevinn/cat';
+
+const httpValidator = new HttpValidator({
+  keys: [
+    {
+      kid: 'Symmetric256',
+      key: Buffer.from(
+        '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+        'hex'
+      )
+    }
+  ],
+  issuer: 'eyevinn'
+});
+
+const server = http.createServer((req, res) => {
+  const result = await httpValidator.validateHttpRequest(
+    req,
+    'Symmetric256'
+  );
+  res.writeHead(result.status, { 'Content-Type': 'text/plain' });
+  res.end(result.message || 'ok');
+});
+server.listen(8080, '127.0.0.1', () => {
+  console.log('Server listening');
+});
+```
+
+```bash
+% curl -v -H 'CTA-Common-Access-Token: 2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w' http://localhost:8080/
+> GET / HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.7.1
+> Accept: */*
+> CTA-Common-Access-Token: 2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w
+> 
+* Request completely sent off
+< HTTP/1.1 401 Unauthorized
+< Content-Type: text/plain
+< Date: Sun, 16 Mar 2025 23:11:03 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< Transfer-Encoding: chunked
+< 
+* Connection #0 to host localhost left intact
+Token has expired
+```
+
+### Verify token
+
+```javascript
+import { CAT } from '@eyevinn/cat';
+
+const validator = new CAT({
+  keys: {
+    Symmetric256: Buffer.from(
+      '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+      'hex'
+    )
+  },
+});
+const base64encoded =
+  '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY'
+try {
+  const cat = await validator.validate(base64encoded, 'mac', {
+    kid: 'Symmetric256',
+    issuer: 'coap://as.example.com'
+  });
+  console.log(cat.claims);
+} catch (err) {
+  // Not valid
+  console.log(err);
+}
+```
+
 ### Generate token
 
 ```javascript
@@ -86,33 +164,6 @@ const base64encoded = await generator.generate(
     kid: 'Symmetric256'
   }
 );
-```
-
-### Verify token
-
-```javascript
-import { CAT } from '@eyevinn/cat';
-
-const validator = new CAT({
-  keys: {
-    Symmetric256: Buffer.from(
-      '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
-      'hex'
-    )
-  },
-});
-const base64encoded =
-  '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY'
-try {
-  const cat = await validator.validate(base64encoded, 'mac', {
-    kid: 'Symmetric256',
-    issuer: 'coap://as.example.com'
-  });
-  console.log(cat.claims);
-} catch (err) {
-  // Not valid
-  console.log(err);
-}
 ```
 
 ## Development
