@@ -114,6 +114,24 @@ describe('CAT', () => {
     ).rejects.toThrow(InvalidIssuerError);
   });
 
+  test('pass if token has not expired', async () => {
+    const base64encoded =
+      '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGnUCOrsGGmfXRKwFGmfXRKxYIOM6yRx830uqAamWFv1amFYRa5vaV2z5lIQTqFEvFh8z';
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    const cat = validator.validate(base64encoded, 'mac', 'eyevinn', {
+      kid: 'Symmetric256'
+    });
+    expect(cat).toBeDefined();
+  });
+
   test('fail if token expired', async () => {
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w';
