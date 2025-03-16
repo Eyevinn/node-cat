@@ -10,7 +10,7 @@
 <div align="center">
 <br />
 
-[![npm](https://img.shields.io/npm/v/@eyevinn/node-cat?style=flat-square)](https://www.npmjs.com/package/@eyevinn/node-cat)
+[![npm](https://img.shields.io/npm/v/@eyevinn/cat?style=flat-square)](https://www.npmjs.com/package/@eyevinn/cat)
 [![github release](https://img.shields.io/github/v/release/Eyevinn/node-cat?style=flat-square)](https://github.com/Eyevinn/node-cat/releases)
 [![license](https://img.shields.io/github/license/eyevinn/node-cat.svg?style=flat-square)](LICENSE)
 
