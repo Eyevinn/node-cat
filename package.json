@@ -7,7 +7,9 @@
   "directories": {
     "lib": "lib"
   },
-  "files": [],
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "test": "jest",
     "test:interop": "INTEROP=true jest",
