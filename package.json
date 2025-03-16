@@ -9,7 +9,8 @@
     "prepare": "husky install",
     "lint": "eslint .",
     "pretty": "prettier --check --ignore-unknown .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "postversion": "git push && git push --tags"
   },
   "author": "",
   "license": "MIT",
