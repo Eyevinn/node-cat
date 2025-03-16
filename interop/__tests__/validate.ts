@@ -30,8 +30,9 @@ describe('CAT library can validate a token that someone else has generated', () 
           '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388'
       }
     );
-    const cat = await validator.validate(token, 'mac', 'eyevinn', {
-      kid: 'Symmetric256'
+    const cat = await validator.validate(token, 'mac', {
+      kid: 'Symmetric256',
+      issuer: 'eyevinn'
     });
     expect(cat).toBeDefined();
     expect(cat!.claims.iss).toBe('eyevinn');

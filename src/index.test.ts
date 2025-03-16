@@ -29,14 +29,10 @@ describe('CAT', () => {
         )
       }
     });
-    const cat = await validator.validate(
-      base64encoded!,
-      'mac',
-      'coap://as.example.com',
-      {
-        kid: 'Symmetric256'
-      }
-    );
+    const cat = await validator.validate(base64encoded!, 'mac', {
+      kid: 'Symmetric256',
+      issuer: 'coap://as.example.com'
+    });
     expect(cat).toBeDefined();
     expect(cat!.claims).toEqual({
       iss: 'coap://as.example.com'
@@ -54,14 +50,10 @@ describe('CAT', () => {
         )
       }
     });
-    const cat = await validator.validate(
-      base64encoded,
-      'mac',
-      'coap://as.example.com',
-      {
-        kid: 'Symmetric256'
-      }
-    );
+    const cat = await validator.validate(base64encoded, 'mac', {
+      kid: 'Symmetric256',
+      issuer: 'coap://as.example.com'
+    });
     expect(cat).toBeDefined();
     expect(cat!.claims).toEqual({
       iss: 'coap://as.example.com'
@@ -80,14 +72,10 @@ describe('CAT', () => {
       },
       expectCwtTag: true
     });
-    const cat = await validator.validate(
-      base64encoded,
-      'mac',
-      'coap://jonas.example.com',
-      {
-        kid: 'Symmetric256'
-      }
-    );
+    const cat = await validator.validate(base64encoded, 'mac', {
+      kid: 'Symmetric256',
+      issuer: 'coap://jonas.example.com'
+    });
     expect(cat).toBeDefined();
     expect(cat!.claims).toEqual({
       iss: 'coap://jonas.example.com',
@@ -108,8 +96,9 @@ describe('CAT', () => {
       }
     });
     await expect(
-      validator.validate(base64encoded, 'mac', 'coap://jonas.example.com', {
-        kid: 'Symmetric256'
+      validator.validate(base64encoded, 'mac', {
+        kid: 'Symmetric256',
+        issuer: 'coap://jonas.example.com'
       })
     ).rejects.toThrow(InvalidIssuerError);
   });
@@ -126,8 +115,9 @@ describe('CAT', () => {
       },
       expectCwtTag: true
     });
-    const cat = validator.validate(base64encoded, 'mac', 'eyevinn', {
-      kid: 'Symmetric256'
+    const cat = validator.validate(base64encoded, 'mac', {
+      kid: 'Symmetric256',
+      issuer: 'eyevinn'
     });
     expect(cat).toBeDefined();
   });
@@ -145,8 +135,9 @@ describe('CAT', () => {
       expectCwtTag: true
     });
     await expect(
-      validator.validate(base64encoded, 'mac', 'eyevinn', {
-        kid: 'Symmetric256'
+      validator.validate(base64encoded, 'mac', {
+        kid: 'Symmetric256',
+        issuer: 'eyevinn'
       })
     ).rejects.toThrow(TokenExpiredError);
   });

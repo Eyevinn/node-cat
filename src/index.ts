@@ -7,6 +7,7 @@ export type CatValidationTypes = 'mac' | 'sign' | 'none';
 export interface CatValidationOptions {
   alg?: string;
   kid: string;
+  issuer: string;
 }
 
 export interface CatGenerateOptions {
@@ -68,8 +69,7 @@ export class CAT {
   public async validate(
     token: string,
     type: CatValidationTypes,
-    issuer: string,
-    opts?: CatValidationOptions
+    opts: CatValidationOptions
   ) {
     const tokenWithoutPadding = token.trim();
     let cat;
@@ -93,7 +93,7 @@ export class CAT {
       throw new Error('Unsupported validation type');
     }
     if (cat) {
-      const valid = await cat.isValid(issuer);
+      const valid = await cat.isValid(opts);
       if (valid) {
         return cat;
       }

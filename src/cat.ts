@@ -1,6 +1,7 @@
 import * as cbor from 'cbor-x';
 import cose from 'cose-js';
 import { InvalidIssuerError, TokenExpiredError } from './errors';
+import { CatValidationOptions } from '.';
 
 const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -189,10 +190,10 @@ export class CommonAccessToken {
     return this;
   }
 
-  public async isValid(issuer: string): Promise<boolean> {
+  public async isValid(opts: CatValidationOptions): Promise<boolean> {
     if (
       this.payload.get(claimsToLabels['iss']) &&
-      this.payload.get(claimsToLabels['iss']) !== issuer
+      this.payload.get(claimsToLabels['iss']) !== opts.issuer
     ) {
       throw new InvalidIssuerError(this.payload.get(claimsToLabels['iss']));
     }
