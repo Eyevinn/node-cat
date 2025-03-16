@@ -1,4 +1,5 @@
 import { CAT } from '.';
+import { InvalidIssuerError, TokenExpiredError } from './errors';
 
 describe('CAT', () => {
   test('can generate a token and verify it', async () => {
@@ -12,13 +13,7 @@ describe('CAT', () => {
     });
     const base64encoded = await generator.generate(
       {
-        iss: 'coap://as.example.com',
-        sub: 'jonas',
-        aud: 'coap://light.example.com',
-        exp: 1444064944,
-        nbf: 1443944944,
-        iat: 1443944944,
-        cti: '0b71'
+        iss: 'coap://as.example.com'
       },
       {
         type: 'mac',
@@ -26,7 +21,6 @@ describe('CAT', () => {
         kid: 'Symmetric256'
       }
     );
-    expect(base64encoded).toBeDefined();
     const validator = new CAT({
       keys: {
         Symmetric256: Buffer.from(
@@ -45,19 +39,13 @@ describe('CAT', () => {
     );
     expect(cat).toBeDefined();
     expect(cat!.claims).toEqual({
-      iss: 'coap://as.example.com',
-      sub: 'jonas',
-      aud: 'coap://light.example.com',
-      exp: 1444064944,
-      nbf: 1443944944,
-      iat: 1443944944,
-      cti: '0b71'
+      iss: 'coap://as.example.com'
     });
   });
 
   test('can validate a MAC:ed token with standard claims', async () => {
     const base64encoded =
-      '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY';
+      '0YRDoQEFoQRMU3ltbWV0cmljMjU2eDZkOTAxMDNhMTAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmRYIDL8dIteq8pMXXX9oL4eo2NX1kQUaselV6p/JHSEVXWX';
     const validator = new CAT({
       keys: {
         Symmetric256: Buffer.from(
@@ -76,13 +64,7 @@ describe('CAT', () => {
     );
     expect(cat).toBeDefined();
     expect(cat!.claims).toEqual({
-      iss: 'coap://as.example.com',
-      sub: 'jonas',
-      aud: 'coap://light.example.com',
-      exp: 1444064944,
-      nbf: 1443944944,
-      iat: 1443944944,
-      cti: '0b71'
+      iss: 'coap://as.example.com'
     });
   });
 
@@ -109,8 +91,8 @@ describe('CAT', () => {
     expect(cat).toBeDefined();
     expect(cat!.claims).toEqual({
       iss: 'coap://jonas.example.com',
-      nbf: 1741985961,
-      iat: 1741985961
+      iat: 1741985961,
+      nbf: 1741985961
     });
   });
 
@@ -129,6 +111,25 @@ describe('CAT', () => {
       validator.validate(base64encoded, 'mac', 'coap://jonas.example.com', {
         kid: 'Symmetric256'
       })
-    ).rejects.toThrow('Invalid token: Issuer not matching');
+    ).rejects.toThrow(InvalidIssuerError);
+  });
+
+  test('fail if token expired', async () => {
+    const base64encoded =
+      '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w';
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    await expect(
+      validator.validate(base64encoded, 'mac', 'eyevinn', {
+        kid: 'Symmetric256'
+      })
+    ).rejects.toThrow(TokenExpiredError);
   });
 });

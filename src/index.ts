@@ -94,10 +94,9 @@ export class CAT {
     }
     if (cat) {
       const valid = await cat.isValid(issuer);
-      if (!valid) {
-        throw new Error(`Invalid token: ${cat.reason}`);
+      if (valid) {
+        return cat;
       }
-      return cat;
     }
   }
 
@@ -111,7 +110,9 @@ export class CAT {
       if (!key) {
         throw new Error('Key not found');
       }
-      const mac = await cat.mac({ k: key, kid: opts.kid }, opts.alg);
+      const mac = await cat.mac({ k: key, kid: opts.kid }, opts.alg, {
+        addCwtTag: this.expectCwtTag
+      });
       if (!mac.raw) {
         throw new Error('Failed to MAC token');
       }

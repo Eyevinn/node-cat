@@ -1,5 +1,6 @@
 import * as cbor from 'cbor-x';
 import cose from 'cose-js';
+import { InvalidIssuerError, TokenExpiredError } from './errors';
 
 const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -66,6 +67,7 @@ const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
 const CWT_TAG = 61;
 
 export type CommonAccessTokenClaims = { [key: string]: string | number };
+export type CommonAccessTokenValue = string | number | Buffer;
 
 export interface CWTEncryptionKey {
   k: Buffer;
@@ -86,7 +88,7 @@ export interface CWTVerifierKey {
 }
 
 function updateMapFromClaims(
-  map: Map<number, string | number | Buffer>,
+  map: Map<number, CommonAccessTokenValue>,
   claims: CommonAccessTokenClaims
 ) {
   for (const param in claims) {
@@ -99,20 +101,21 @@ function updateMapFromClaims(
 }
 
 export class CommonAccessToken {
-  private payload: Map<number, string | number | Buffer>;
+  private payload: Map<number, CommonAccessTokenValue>;
   private data?: Buffer;
-  private errMsg?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
-    this.payload = new Map<number, string | number | Buffer>();
+    this.payload = new Map<number, CommonAccessTokenValue>();
     updateMapFromClaims(this.payload, claims);
   }
 
   public async mac(
     key: CWTEncryptionKey,
-    alg: string
+    alg: string,
+    opts?: {
+      addCwtTag: boolean;
+    }
   ): Promise<CommonAccessToken> {
-    const plaintext = cbor.encode(this.payload).toString('hex');
     const headers = {
       p: { alg: alg },
       u: { kid: key.kid }
@@ -120,7 +123,21 @@ export class CommonAccessToken {
     const recipient = {
       key: key.k
     };
-    this.data = await cose.mac.create(headers, plaintext, recipient);
+    if (opts?.addCwtTag) {
+      const plaintext = cbor.encode(this.payload);
+      const coseMessage = await cose.mac.create(
+        headers,
+        plaintext as unknown as string,
+        recipient
+      );
+      const decoded = cbor.decode(coseMessage).value;
+      const coseTag = new cbor.Tag(decoded, 17);
+      const cwtTag = new cbor.Tag(coseTag, CWT_TAG);
+      this.data = cbor.encode(cwtTag);
+    } else {
+      const plaintext = cbor.encode(this.payload).toString('hex');
+      this.data = await cose.mac.create(headers, plaintext, recipient);
+    }
     return this;
   }
 
@@ -136,8 +153,8 @@ export class CommonAccessToken {
       throw new Error('Expected CWT tag');
     }
     if (coseMessage.tag === CWT_TAG) {
-      const cwt = cbor.encode(coseMessage.value);
-      const buf = await cose.mac.read(cwt, key.k);
+      const cborCoseMessage = cbor.encode(coseMessage.value);
+      const buf = await cose.mac.read(cborCoseMessage, key.k);
       const json = await cbor.decode(buf);
       updateMapFromClaims(this.payload, json);
     } else {
@@ -173,13 +190,17 @@ export class CommonAccessToken {
   }
 
   public async isValid(issuer: string): Promise<boolean> {
-    if (!this.payload.get(claimsToLabels['iss'])) {
-      this.errMsg = 'Missing issuer';
-      return false;
+    if (
+      this.payload.get(claimsToLabels['iss']) &&
+      this.payload.get(claimsToLabels['iss']) !== issuer
+    ) {
+      throw new InvalidIssuerError(this.payload.get(claimsToLabels['iss']));
     }
-    if (this.payload.get(claimsToLabels['iss']) !== issuer) {
-      this.errMsg = 'Issuer not matching';
-      return false;
+    if (
+      this.payload.get(claimsToLabels['exp']) &&
+      (this.payload.get(claimsToLabels['exp']) as number) < Date.now() / 1000
+    ) {
+      throw new TokenExpiredError();
     }
     return true;
   }
@@ -187,10 +208,6 @@ export class CommonAccessToken {
   get(key: string) {
     const theKey = claimsToLabels[key] ? claimsToLabels[key] : parseInt(key);
     return this.payload.get(theKey);
-  }
-
-  get reason() {
-    return this.errMsg;
   }
 
   get claims() {
