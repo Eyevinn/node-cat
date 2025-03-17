@@ -232,7 +232,6 @@ describe('CAT claims', () => {
 
   test('fail if token is not active yet', async () => {
     const nbf = Math.floor(Date.now() / 1000) + 1000;
-    console.log(nbf);
     const base64encoded = await generator.generate(
       {
         iss: 'eyevinn',
@@ -249,5 +248,24 @@ describe('CAT claims', () => {
         issuer: 'eyevinn'
       })
     ).rejects.toThrow(TokenNotActiveError);
+  });
+
+  test('pass if token is active', async () => {
+    const nbf = Math.floor(Date.now() / 1000) - 1000;
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        nbf
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    const cat = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(cat).toBeDefined();
   });
 });
