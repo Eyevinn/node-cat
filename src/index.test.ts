@@ -1,10 +1,12 @@
 import { CAT } from '.';
+import { CommonAccessTokenUri } from './catu';
 import {
   InvalidAudienceError,
   InvalidIssuerError,
   KeyNotFoundError,
   TokenExpiredError,
-  TokenNotActiveError
+  TokenNotActiveError,
+  UriNotAllowedError
 } from './errors';
 
 describe('CAT', () => {
@@ -267,5 +269,40 @@ describe('CAT claims', () => {
       issuer: 'eyevinn'
     });
     expect(cat).toBeDefined();
+  });
+
+  test('pass if token has a catu claim that matches url', async () => {
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        catu: CommonAccessTokenUri.fromDict({
+          scheme: {
+            'exact-match': 'https'
+          },
+          path: {
+            'prefix-match': '/content'
+          },
+          extension: {
+            'exact-match': '.m3u8'
+          }
+        }).payload
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    const cat = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn',
+      url: new URL('https://example.com/content/path/file.m3u8')
+    });
+    expect(cat).toBeDefined();
+    await expect(
+      validator.validate(base64encoded!, 'mac', {
+        issuer: 'eyevinn',
+        url: new URL('https://example.com/content/path/file.ts')
+      })
+    ).rejects.toThrow(UriNotAllowedError);
   });
 });
