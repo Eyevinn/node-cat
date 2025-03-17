@@ -6,6 +6,7 @@ import {
   KeyNotFoundError,
   TokenExpiredError
 } from '../errors';
+import { CloudFrontRequest } from 'aws-lambda';
 
 interface HttpValidatorKey {
   kid: string;
@@ -63,6 +64,26 @@ export class HttpValidator {
     });
     this.opts = opts;
     this.opts.tokenMandatory = opts.tokenMandatory ?? true;
+  }
+
+  public async validateCloudFrontRequest(
+    cfRequest: CloudFrontRequest
+  ): Promise<HttpResponse> {
+    const requestLike: Pick<IncomingMessage, 'headers'> = {
+      headers: {}
+    };
+
+    if (cfRequest.headers) {
+      Object.entries(cfRequest.headers).forEach(([name, header]) => {
+        if (header && header.length > 0) {
+          requestLike.headers[name.toLowerCase()] = header
+            .map((h) => h.value)
+            .join(',');
+        }
+      });
+    }
+
+    return await this.validateHttpRequest(requestLike as IncomingMessage);
   }
 
   public async validateHttpRequest(

@@ -188,4 +188,34 @@ describe('HTTP Request CAT Validator', () => {
     const result = await httpValidatorOptional.validateHttpRequest(request);
     expect(result.status).toBe(200);
   });
+
+  test('can handle request of CloudFront request type', async () => {
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateCloudFrontRequest({
+      clientIp: 'dummy',
+      method: 'GET',
+      uri: '/index.html',
+      querystring: '',
+      headers: {
+        'cta-common-access-token': [
+          {
+            value:
+              '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGnUCOrsGGmfXRKwFGmfXRKxYIOM6yRx830uqAamWFv1amFYRa5vaV2z5lIQTqFEvFh8z'
+          }
+        ]
+      }
+    });
+    expect(result.status).toBe(200);
+  });
 });

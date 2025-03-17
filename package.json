@@ -32,6 +32,7 @@
     "@commitlint/config-conventional": "^17.4.2",
     "@osaas/client-core": "^0.15.1",
     "@osaas/client-web": "^0.5.1",
+    "@types/aws-lambda": "^8.10.147",
     "@types/cose-js": "^0.8.3",
     "@types/jest": "^29.5.14",
     "@typescript-eslint/eslint-plugin": "^5.51.0",
