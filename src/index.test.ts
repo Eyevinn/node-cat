@@ -151,7 +151,7 @@ describe('CAT claims', () => {
   test('fail if token has an invalid audience', async () => {
     // {"aud": ["one", "two"]}
     const base64encoded =
-      '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2V6MDgmNvbmVjdHdvBhpn12R8BRpn12R8WCAdnSbUN4KbIvaHLn-q4f4YRpfq6ERYotByjbIyZ-EkfQ'
+      '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2V6MDgmNvbmVjdHdvBhpn12R8BRpn12R8WCAdnSbUN4KbIvaHLn-q4f4YRpfq6ERYotByjbIyZ-EkfQ';
     await expect(
       validator.validate(base64encoded, 'mac', {
         kid: 'Symmetric256',
