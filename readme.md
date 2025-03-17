@@ -78,8 +78,7 @@ const httpValidator = new HttpValidator({
 
 const server = http.createServer((req, res) => {
   const result = await httpValidator.validateHttpRequest(
-    req,
-    'Symmetric256'
+    req
   );
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
@@ -126,7 +125,6 @@ const base64encoded =
   '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY';
 try {
   const cat = await validator.validate(base64encoded, 'mac', {
-    kid: 'Symmetric256',
     issuer: 'coap://as.example.com'
   });
   console.log(cat.claims);

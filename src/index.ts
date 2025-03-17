@@ -1,4 +1,5 @@
 import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
+import { KeyNotFoundError } from './errors';
 
 export { CommonAccessToken } from './cat';
 export { HttpValidator } from './validators/http';
@@ -7,7 +8,6 @@ export type CatValidationTypes = 'mac' | 'sign' | 'none';
 
 export interface CatValidationOptions {
   alg?: string;
-  kid: string;
   issuer: string;
   audience?: string[];
 }
@@ -80,18 +80,33 @@ export class CAT {
       if (!opts) {
         throw new Error('Missing options for MAC validation');
       }
-      const key = this.keys[opts.kid];
-      if (!key) {
-        throw new Error('Key not found');
+      let error;
+      for (const kid in this.keys) {
+        try {
+          const key = this.keys[kid];
+          cat = await CommonAccessTokenFactory.fromMacedToken(
+            tokenWithoutPadding,
+            {
+              k: key,
+              kid: kid
+            },
+            this.expectCwtTag
+          );
+          if (cat && cat.claims) {
+            error = undefined;
+            break;
+          }
+        } catch (err) {
+          error = err;
+        }
       }
-      cat = await CommonAccessTokenFactory.fromMacedToken(
-        tokenWithoutPadding,
-        {
-          k: key,
-          kid: opts.kid
-        },
-        this.expectCwtTag
-      );
+      if (error) {
+        if ((error as Error).message === 'Tag mismatch') {
+          throw new KeyNotFoundError();
+        } else {
+          throw error;
+        }
+      }
     } else {
       throw new Error('Unsupported validation type');
     }

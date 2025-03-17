@@ -2,6 +2,7 @@ import { CAT } from '.';
 import {
   InvalidAudienceError,
   InvalidIssuerError,
+  KeyNotFoundError,
   TokenExpiredError
 } from './errors';
 
@@ -34,7 +35,6 @@ describe('CAT', () => {
       }
     });
     const cat = await validator.validate(base64encoded!, 'mac', {
-      kid: 'Symmetric256',
       issuer: 'coap://as.example.com'
     });
     expect(cat).toBeDefined();
@@ -55,7 +55,6 @@ describe('CAT', () => {
       }
     });
     const cat = await validator.validate(base64encoded, 'mac', {
-      kid: 'Symmetric256',
       issuer: 'coap://as.example.com'
     });
     expect(cat).toBeDefined();
@@ -77,7 +76,6 @@ describe('CAT', () => {
       expectCwtTag: true
     });
     const cat = await validator.validate(base64encoded, 'mac', {
-      kid: 'Symmetric256',
       issuer: 'coap://jonas.example.com'
     });
     expect(cat).toBeDefined();
@@ -86,6 +84,71 @@ describe('CAT', () => {
       iat: 1741985961,
       nbf: 1741985961
     });
+  });
+
+  test('can handle multiple keys (under rotation)', async () => {
+    const validator = new CAT({
+      keys: {
+        keyone: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        ),
+        keytwo: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569389',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+
+    const generator1 = new CAT({
+      keys: {
+        keyone: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    const token1 = await generator1.generate(
+      {
+        iss: 'coap://as.example.com'
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'keyone'
+      }
+    );
+    const cat = await validator.validate(token1!, 'mac', {
+      issuer: 'coap://as.example.com'
+    });
+    expect(cat).toBeDefined();
+
+    const generator2 = new CAT({
+      keys: {
+        keythree: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569398',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    const token2 = await generator2.generate(
+      {
+        iss: 'coap://as.example.com'
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'keythree'
+      }
+    );
+    await expect(
+      validator.validate(token2!, 'mac', {
+        issuer: 'coap://as.example.com'
+      })
+    ).rejects.toThrow(KeyNotFoundError);
   });
 });
 
@@ -109,7 +172,6 @@ describe('CAT claims', () => {
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2VKMBZWpvbmFzBhpn12U-BRpn12U-WCDf1xHvhcnvyXUxd-DP4RAbayc8nC2PLJPPPbF3S00ruw';
     await expect(
       validator.validate(base64encoded, 'mac', {
-        kid: 'Symmetric256',
         issuer: 'coap://jonas.example.com'
       })
     ).rejects.toThrow(InvalidIssuerError);
@@ -119,7 +181,6 @@ describe('CAT claims', () => {
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGnUCOrsGGmfXRKwFGmfXRKxYIOM6yRx830uqAamWFv1amFYRa5vaV2z5lIQTqFEvFh8z';
     const cat = validator.validate(base64encoded, 'mac', {
-      kid: 'Symmetric256',
       issuer: 'eyevinn'
     });
     expect(cat).toBeDefined();
@@ -130,7 +191,6 @@ describe('CAT claims', () => {
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w';
     await expect(
       validator.validate(base64encoded, 'mac', {
-        kid: 'Symmetric256',
         issuer: 'eyevinn'
       })
     ).rejects.toThrow(TokenExpiredError);
@@ -141,7 +201,6 @@ describe('CAT claims', () => {
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2V6MDgmNvbmVjdHdvBhpn12R8BRpn12R8WCAdnSbUN4KbIvaHLn-q4f4YRpfq6ERYotByjbIyZ-EkfQ';
     const cat = validator.validate(base64encoded, 'mac', {
-      kid: 'Symmetric256',
       issuer: 'eyevinn',
       audience: ['one', 'three']
     });
@@ -154,7 +213,6 @@ describe('CAT claims', () => {
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2V6MDgmNvbmVjdHdvBhpn12R8BRpn12R8WCAdnSbUN4KbIvaHLn-q4f4YRpfq6ERYotByjbIyZ-EkfQ';
     await expect(
       validator.validate(base64encoded, 'mac', {
-        kid: 'Symmetric256',
         issuer: 'eyevinn',
         audience: ['three']
       })

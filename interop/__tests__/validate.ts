@@ -31,7 +31,6 @@ describe('CAT library can validate a token that someone else has generated', () 
       }
     );
     const cat = await validator.validate(token, 'mac', {
-      kid: 'Symmetric256',
       issuer: 'eyevinn'
     });
     expect(cat).toBeDefined();
