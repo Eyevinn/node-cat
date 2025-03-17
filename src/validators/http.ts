@@ -4,7 +4,8 @@ import {
   InvalidAudienceError,
   InvalidIssuerError,
   KeyNotFoundError,
-  TokenExpiredError
+  TokenExpiredError,
+  UriNotAllowedError
 } from '../errors';
 import { CloudFrontRequest } from 'aws-lambda';
 
@@ -69,8 +70,10 @@ export class HttpValidator {
   public async validateCloudFrontRequest(
     cfRequest: CloudFrontRequest
   ): Promise<HttpResponse> {
-    const requestLike: Pick<IncomingMessage, 'headers'> = {
-      headers: {}
+    const requestLike: Pick<IncomingMessage, 'headers'> &
+      Pick<IncomingMessage, 'url'> = {
+      headers: {},
+      url: ''
     };
 
     if (cfRequest.headers) {
@@ -82,6 +85,7 @@ export class HttpValidator {
         }
       });
     }
+    requestLike.url = cfRequest.uri;
 
     return await this.validateHttpRequest(requestLike as IncomingMessage);
   }
@@ -93,6 +97,12 @@ export class HttpValidator {
       keys: this.keys
     });
 
+    let url: URL | undefined = undefined;
+    const host = request.headers.host;
+    if (host) {
+      url = new URL(`https://${host}${request.url}`);
+    }
+
     // Check for token in headers first
     if (request.headers['cta-common-access-token']) {
       const token = Array.isArray(request.headers['cta-common-access-token'])
@@ -101,7 +111,8 @@ export class HttpValidator {
       try {
         await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
-          audience: this.opts.audience
+          audience: this.opts.audience,
+          url
         });
         return { status: 200 };
       } catch (err) {
@@ -109,7 +120,8 @@ export class HttpValidator {
           err instanceof InvalidIssuerError ||
           err instanceof InvalidAudienceError ||
           err instanceof KeyNotFoundError ||
-          err instanceof TokenExpiredError
+          err instanceof TokenExpiredError ||
+          err instanceof UriNotAllowedError
         ) {
           return { status: 401, message: (err as Error).message };
         } else {

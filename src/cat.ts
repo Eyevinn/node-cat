@@ -5,9 +5,11 @@ import {
   InvalidClaimTypeError,
   InvalidIssuerError,
   TokenExpiredError,
-  TokenNotActiveError
+  TokenNotActiveError,
+  UriNotAllowedError
 } from './errors';
 import { CatValidationOptions } from '.';
+import { CommonAccessTokenUri } from './catu';
 
 const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -80,8 +82,14 @@ const claimTypeValidators: { [key: string]: (value: string) => boolean } = {
 
 const CWT_TAG = 61;
 
-export type CommonAccessTokenClaims = { [key: string]: string | number };
-export type CommonAccessTokenValue = string | number | Buffer;
+export type CommonAccessTokenClaims = {
+  [key: string]: string | number | Map<number, any>;
+};
+export type CommonAccessTokenValue =
+  | string
+  | number
+  | Buffer
+  | Map<number, any>;
 
 export interface CWTEncryptionKey {
   k: Buffer;
@@ -244,6 +252,18 @@ export class CommonAccessToken {
     ) {
       throw new TokenNotActiveError();
     }
+    if (this.payload.get(claimsToLabels['catu'])) {
+      const catu = CommonAccessTokenUri.fromMap(
+        this.payload.get(claimsToLabels['catu']) as Map<number, any>
+      );
+      if (!opts.url) {
+        throw new UriNotAllowedError('No URL provided');
+      }
+      if (!(await catu.match(opts.url))) {
+        throw new UriNotAllowedError(`URI ${opts.url} not allowed`);
+      }
+    }
+
     return true;
   }
 

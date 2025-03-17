@@ -35,3 +35,15 @@ export class TokenNotActiveError extends Error {
     super('Token is not yet active');
   }
 }
+
+export class InvalidCatuError extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}
+
+export class UriNotAllowedError extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}

@@ -10,6 +10,7 @@ export interface CatValidationOptions {
   alg?: string;
   issuer: string;
   audience?: string[];
+  url?: URL;
 }
 
 export interface CatGenerateOptions {
@@ -119,7 +120,7 @@ export class CAT {
   }
 
   public async generate(
-    claims: { [key: string]: string | number },
+    claims: { [key: string]: string | number | Map<number, any> },
     opts?: CatGenerateOptions
   ) {
     const cat = new CommonAccessToken(claims);
