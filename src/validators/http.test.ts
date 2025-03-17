@@ -1,5 +1,5 @@
 import { createRequest } from 'node-mocks-http';
-import { HttpValidator } from './http';
+import { HttpValidator, NoTokenFoundError } from './http';
 import { CAT } from '..';
 
 describe('HTTP Request CAT Validator', () => {
@@ -125,6 +125,67 @@ describe('HTTP Request CAT Validator', () => {
       issuer: 'eyevinn'
     });
     const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(200);
+  });
+
+  test('can handle when CTA access token header is an array', async () => {
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': [
+          '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGnUCOrsGGmfXRKwFGmfXRKxYIOM6yRx830uqAamWFv1amFYRa5vaV2z5lIQTqFEvFh8z'
+        ]
+      }
+    });
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(200);
+  });
+
+  test('returns ok when CTA common access token is optional', async () => {
+    const request = createRequest({
+      method: 'GET'
+    });
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    await expect(httpValidator.validateHttpRequest(request)).rejects.toThrow(
+      NoTokenFoundError
+    );
+    const httpValidatorOptional = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn',
+      tokenMandatory: false
+    });
+    const result = await httpValidatorOptional.validateHttpRequest(request);
     expect(result.status).toBe(200);
   });
 });

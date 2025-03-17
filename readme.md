@@ -72,6 +72,7 @@ const httpValidator = new HttpValidator({
       )
     }
   ],
+  tokenMandatory: true // Optional (default: true)
   issuer: 'eyevinn',
   audience: ['one', 'two'] // Optional
 });
