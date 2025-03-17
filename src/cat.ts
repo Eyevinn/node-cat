@@ -4,7 +4,8 @@ import {
   InvalidAudienceError,
   InvalidClaimTypeError,
   InvalidIssuerError,
-  TokenExpiredError
+  TokenExpiredError,
+  TokenNotActiveError
 } from './errors';
 import { CatValidationOptions } from '.';
 
@@ -73,7 +74,8 @@ const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
 const claimTypeValidators: { [key: string]: (value: string) => boolean } = {
   iss: (value) => typeof value === 'string',
   exp: (value) => typeof value === 'number',
-  aud: (value) => typeof value === 'string' || Array.isArray(value)
+  aud: (value) => typeof value === 'string' || Array.isArray(value),
+  nbf: (value) => typeof value === 'number'
 };
 
 const CWT_TAG = 61;
@@ -100,16 +102,22 @@ export interface CWTVerifierKey {
 }
 
 function updateMapFromClaims(
-  map: Map<number, CommonAccessTokenValue>,
   claims: CommonAccessTokenClaims
-) {
-  for (const param in claims) {
+): Map<number, CommonAccessTokenValue> {
+  const map = new Map<number, CommonAccessTokenValue>();
+
+  let dict = claims;
+  if (claims instanceof Map) {
+    dict = Object.fromEntries(claims);
+  }
+  for (const param in dict) {
     const key = claimsToLabels[param] ? claimsToLabels[param] : parseInt(param);
     const value = claimTransform[param]
-      ? claimTransform[param](claims[param] as string)
-      : claims[param];
+      ? claimTransform[param](dict[param] as string)
+      : dict[param];
     map.set(key, value);
   }
+  return map;
 }
 
 export class CommonAccessToken {
@@ -117,8 +125,7 @@ export class CommonAccessToken {
   private data?: Buffer;
 
   constructor(claims: CommonAccessTokenClaims) {
-    this.payload = new Map<number, CommonAccessTokenValue>();
-    updateMapFromClaims(this.payload, claims);
+    this.payload = updateMapFromClaims(claims);
   }
 
   public async mac(
@@ -127,7 +134,7 @@ export class CommonAccessToken {
     opts?: {
       addCwtTag: boolean;
     }
-  ): Promise<CommonAccessToken> {
+  ): Promise<void> {
     const headers = {
       p: { alg: alg },
       u: { kid: key.kid }
@@ -150,7 +157,6 @@ export class CommonAccessToken {
       const plaintext = cbor.encode(this.payload).toString('hex');
       this.data = await cose.mac.create(headers, plaintext, recipient);
     }
-    return this;
   }
 
   public async parse(
@@ -159,7 +165,7 @@ export class CommonAccessToken {
     opts?: {
       expectCwtTag: boolean;
     }
-  ): Promise<CommonAccessToken> {
+  ): Promise<void> {
     const coseMessage = cbor.decode(token);
     if (opts?.expectCwtTag && coseMessage.tag !== 61) {
       throw new Error('Expected CWT tag');
@@ -168,18 +174,14 @@ export class CommonAccessToken {
       const cborCoseMessage = cbor.encode(coseMessage.value);
       const buf = await cose.mac.read(cborCoseMessage, key.k);
       const json = await cbor.decode(buf);
-      updateMapFromClaims(this.payload, json);
+      this.payload = updateMapFromClaims(json);
     } else {
       const buf = await cose.mac.read(token, key.k);
       this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
     }
-    return this;
   }
 
-  public async sign(
-    key: CWTSigningKey,
-    alg: string
-  ): Promise<CommonAccessToken> {
+  public async sign(key: CWTSigningKey, alg: string): Promise<void> {
     const plaintext = cbor.encode(this.payload).toString('hex');
     const headers = {
       p: { alg: alg },
@@ -189,7 +191,6 @@ export class CommonAccessToken {
       key: key
     };
     this.data = await cose.sign.create(headers, plaintext, signer);
-    return this;
   }
 
   public async verify(
@@ -204,7 +205,7 @@ export class CommonAccessToken {
   private async validateTypes() {
     for (const [key, value] of this.payload) {
       const claim = labelsToClaim[key];
-      if (claimTypeValidators[claim]) {
+      if (value && claimTypeValidators[claim]) {
         if (!claimTypeValidators[claim](value as string)) {
           throw new InvalidClaimTypeError(claim, value as string);
         }
@@ -235,6 +236,13 @@ export class CommonAccessToken {
           throw new InvalidAudienceError(claimAud as string[]);
         }
       }
+    }
+    if (
+      this.payload.get(claimsToLabels['nbf']) &&
+      (this.payload.get(claimsToLabels['nbf']) as number) >
+        Math.floor(Date.now() / 1000)
+    ) {
+      throw new TokenNotActiveError();
     }
     return true;
   }
@@ -272,8 +280,8 @@ export class CommonAccessTokenFactory {
   ): Promise<CommonAccessToken> {
     const token = Buffer.from(base64encoded, 'base64');
     const cat = new CommonAccessToken({});
-    const verified = await cat.verify(token, key);
-    return verified;
+    await cat.verify(token, key);
+    return cat;
   }
 
   public static async fromMacedToken(
@@ -283,7 +291,7 @@ export class CommonAccessTokenFactory {
   ): Promise<CommonAccessToken> {
     const token = Buffer.from(base64encoded, 'base64');
     const cat = new CommonAccessToken({});
-    const parsed = await cat.parse(token, key, { expectCwtTag });
-    return parsed;
+    await cat.parse(token, key, { expectCwtTag });
+    return cat;
   }
 }

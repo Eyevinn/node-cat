@@ -29,12 +29,13 @@ describe('CAT', () => {
       ),
       kid: 'Symmetric256'
     };
-    const mac = await cat.mac(key, 'HS256', { addCwtTag: true });
-    expect(mac.raw).toBeDefined();
-    const macHex = mac.raw?.toString('hex');
+    await cat.mac(key, 'HS256', { addCwtTag: true });
+    expect(cat.raw).toBeDefined();
+    const macHex = cat.raw?.toString('hex');
     const token = Buffer.from(macHex!, 'hex');
-    const parsed = await cat.parse(token, key, { expectCwtTag: true });
-    expect(parsed.claims).toEqual(claims);
+    const newCat = new CommonAccessToken({});
+    await newCat.parse(token, key, { expectCwtTag: true });
+    expect(newCat.claims).toEqual(claims);
   });
 
   test('can sign a CAT object', async () => {
@@ -55,8 +56,8 @@ describe('CAT', () => {
       ),
       kid: 'AsymmetricECDSA256'
     };
-    const signed = await cat.sign(signKey, 'ES256');
-    const signedHex = signed.raw?.toString('hex');
+    await cat.sign(signKey, 'ES256');
+    const signedHex = cat.raw?.toString('hex');
     const token = Buffer.from(signedHex!, 'hex');
     const verifyKey = {
       x: Buffer.from(
@@ -69,8 +70,8 @@ describe('CAT', () => {
       ),
       kid: 'AsymmetricECDSA256'
     };
-    const verified = await cat.verify(token, verifyKey);
-    expect(verified.claims).toEqual(claims);
+    await cat.verify(token, verifyKey);
+    expect(cat.claims).toEqual(claims);
   });
 
   test('can create a CAT object from a signed base64 encoded token', async () => {
