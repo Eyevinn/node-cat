@@ -3,7 +3,8 @@ import {
   InvalidAudienceError,
   InvalidIssuerError,
   KeyNotFoundError,
-  TokenExpiredError
+  TokenExpiredError,
+  TokenNotActiveError
 } from './errors';
 
 describe('CAT', () => {
@@ -154,9 +155,19 @@ describe('CAT', () => {
 
 describe('CAT claims', () => {
   let validator: CAT;
+  let generator: CAT;
 
   beforeEach(() => {
     validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    generator = new CAT({
       keys: {
         Symmetric256: Buffer.from(
           '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
@@ -217,5 +228,44 @@ describe('CAT claims', () => {
         audience: ['three']
       })
     ).rejects.toThrow(InvalidAudienceError);
+  });
+
+  test('fail if token is not active yet', async () => {
+    const nbf = Math.floor(Date.now() / 1000) + 1000;
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        nbf
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    await expect(
+      validator.validate(base64encoded!, 'mac', {
+        issuer: 'eyevinn'
+      })
+    ).rejects.toThrow(TokenNotActiveError);
+  });
+
+  test('pass if token is active', async () => {
+    const nbf = Math.floor(Date.now() / 1000) - 1000;
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        nbf
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    const cat = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(cat).toBeDefined();
   });
 });

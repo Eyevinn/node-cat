@@ -128,13 +128,13 @@ export class CAT {
       if (!key) {
         throw new Error('Key not found');
       }
-      const mac = await cat.mac({ k: key, kid: opts.kid }, opts.alg, {
+      await cat.mac({ k: key, kid: opts.kid }, opts.alg, {
         addCwtTag: this.expectCwtTag
       });
-      if (!mac.raw) {
+      if (!cat.raw) {
         throw new Error('Failed to MAC token');
       }
-      return mac.raw.toString('base64');
+      return cat.raw.toString('base64');
     }
   }
 }
