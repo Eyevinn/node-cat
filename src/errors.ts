@@ -29,3 +29,9 @@ export class InvalidAudienceError extends Error {
     super(`Invalid audience: ${audience.join(', ')}`);
   }
 }
+
+export class TokenNotActiveError extends Error {
+  constructor() {
+    super('Token is not yet active');
+  }
+}
