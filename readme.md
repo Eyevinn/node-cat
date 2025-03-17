@@ -29,7 +29,7 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 | Claim | Validate |
 | ----- | ------ |
 | Issuer (`iss`) | Yes | 
-| Audience (`aud`) | No |
+| Audience (`aud`) | Yes |
 | Expiration (`exp`) | Yes |
 | Not Before (`nbf`) | No |
 | CWT ID (`cti`) | No |
