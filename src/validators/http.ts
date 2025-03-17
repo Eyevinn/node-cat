@@ -1,5 +1,11 @@
 import { IncomingMessage } from 'node:http';
 import { CAT } from '..';
+import {
+  InvalidAudienceError,
+  InvalidIssuerError,
+  KeyNotFoundError,
+  TokenExpiredError
+} from '../errors';
 
 interface HttpValidatorKey {
   kid: string;
@@ -7,6 +13,7 @@ interface HttpValidatorKey {
 }
 
 export interface HttpValidatorOptions {
+  tokenMandatory?: boolean;
   keys: HttpValidatorKey[];
   issuer: string;
   audience?: string[];
@@ -15,6 +22,12 @@ export interface HttpValidatorOptions {
 export interface HttpResponse {
   status: number;
   message?: string;
+}
+
+export class NoTokenFoundError extends Error {
+  constructor() {
+    super('No CTA token could be found');
+  }
 }
 
 /**
@@ -49,6 +62,7 @@ export class HttpValidator {
       this.keys[k.kid] = k.key;
     });
     this.opts = opts;
+    this.opts.tokenMandatory = opts.tokenMandatory ?? true;
   }
 
   public async validateHttpRequest(
@@ -60,7 +74,9 @@ export class HttpValidator {
 
     // Check for token in headers first
     if (request.headers['cta-common-access-token']) {
-      const token = request.headers['cta-common-access-token'] as string;
+      const token = Array.isArray(request.headers['cta-common-access-token'])
+        ? request.headers['cta-common-access-token'][0]
+        : request.headers['cta-common-access-token'];
       try {
         await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
@@ -68,9 +84,22 @@ export class HttpValidator {
         });
         return { status: 200 };
       } catch (err) {
-        return { status: 401, message: (err as Error).message };
+        if (
+          err instanceof InvalidIssuerError ||
+          err instanceof InvalidAudienceError ||
+          err instanceof KeyNotFoundError ||
+          err instanceof TokenExpiredError
+        ) {
+          return { status: 401, message: (err as Error).message };
+        } else {
+          console.log(`Internal error`, err);
+          return { status: 500, message: (err as Error).message };
+        }
       }
     }
-    throw new Error('No CTA token could be found');
+    if (this.opts.tokenMandatory) {
+      throw new NoTokenFoundError();
+    }
+    return { status: 200 };
   }
 }
