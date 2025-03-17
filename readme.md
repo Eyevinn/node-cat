@@ -72,7 +72,8 @@ const httpValidator = new HttpValidator({
       )
     }
   ],
-  issuer: 'eyevinn'
+  issuer: 'eyevinn',
+  audience: ['one', 'two'] // Optional
 });
 
 const server = http.createServer((req, res) => {

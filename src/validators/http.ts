@@ -9,6 +9,7 @@ interface HttpValidatorKey {
 export interface HttpValidatorOptions {
   keys: HttpValidatorKey[];
   issuer: string;
+  audience?: string[];
 }
 
 export interface HttpResponse {
@@ -31,6 +32,7 @@ export interface HttpResponse {
  *     }
  *   ],
  *   issuer: 'eyevinn'
+ *   audience: ['one', 'two'] // Optional
  *  });
  *  const result = await httpValidator.validateHttpRequest(
  *    request,
@@ -63,7 +65,8 @@ export class HttpValidator {
       try {
         await validator.validate(token, 'mac', {
           kid,
-          issuer: this.opts.issuer
+          issuer: this.opts.issuer,
+          audience: this.opts.audience
         });
         return { status: 200 };
       } catch (err) {
