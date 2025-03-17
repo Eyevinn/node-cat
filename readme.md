@@ -115,11 +115,11 @@ Token has expired
 import {
   Context,
   CloudFrontResponseEvent,
-  CloudFrontResponseCallback,
-} from "aws-lambda";
+  CloudFrontResponseCallback
+} from 'aws-lambda';
 import { HttpValidator } from '@eyevinn/cat';
 
-export const handler = async(
+export const handler = async (
   event: CloudFrontResponseEvent,
   context: Context,
   callback: CloudFrontResponseCallback
@@ -134,7 +134,7 @@ export const handler = async(
         )
       }
     ],
-    issuer: 'eyevinn',
+    issuer: 'eyevinn'
   });
   const request = event.Records[0].cf.request;
   const response = event.Records[0].cf.response;
@@ -142,7 +142,7 @@ export const handler = async(
   response.status = result.status;
   response.statusDescription = result.message;
   callback(null, response);
-}
+};
 ```
 
 ### Verify token
