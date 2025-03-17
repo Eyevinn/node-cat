@@ -109,6 +109,42 @@ server.listen(8080, '127.0.0.1', () => {
 Token has expired
 ```
 
+### Validate CTA Common Access Token in a CloudFront request
+
+```javascript
+import {
+  Context,
+  CloudFrontResponseEvent,
+  CloudFrontResponseCallback,
+} from "aws-lambda";
+import { HttpValidator } from '@eyevinn/cat';
+
+export const handler = async(
+  event: CloudFrontResponseEvent,
+  context: Context,
+  callback: CloudFrontResponseCallback
+) => {
+  const httpValidator = new HttpValidator({
+    keys: [
+      {
+        kid: 'Symmetric256',
+        key: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    ],
+    issuer: 'eyevinn',
+  });
+  const request = event.Records[0].cf.request;
+  const response = event.Records[0].cf.response;
+  const result = await httpValidator.validateCloudFrontRequest(request);
+  response.status = result.status;
+  response.statusDescription = result.message;
+  callback(null, response);
+}
+```
+
 ### Verify token
 
 ```javascript
