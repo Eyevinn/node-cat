@@ -52,8 +52,7 @@ export class HttpValidator {
   }
 
   public async validateHttpRequest(
-    request: IncomingMessage,
-    kid: string
+    request: IncomingMessage
   ): Promise<HttpResponse> {
     const validator = new CAT({
       keys: this.keys
@@ -64,7 +63,6 @@ export class HttpValidator {
       const token = request.headers['cta-common-access-token'] as string;
       try {
         await validator.validate(token, 'mac', {
-          kid,
           issuer: this.opts.issuer,
           audience: this.opts.audience
         });

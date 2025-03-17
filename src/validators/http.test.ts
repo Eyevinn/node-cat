@@ -1,5 +1,6 @@
 import { createRequest } from 'node-mocks-http';
 import { HttpValidator } from './http';
+import { CAT } from '..';
 
 describe('HTTP Request CAT Validator', () => {
   test('fail to validate token in CTA-Common-Access-Token header with wrong signature', async () => {
@@ -22,13 +23,12 @@ describe('HTTP Request CAT Validator', () => {
       ],
       issuer: 'eyevinn'
     });
-    const result = await httpValidator.validateHttpRequest(
-      request,
-      'Symmetric256'
-    );
+    const result = await httpValidator.validateHttpRequest(request);
     expect(result.status).not.toBe(200);
     expect(result.status).toBe(401);
-    expect(result.message).toBe('Tag mismatch');
+    expect(result.message).toBe(
+      'Failed to validate token signature with any of the available keys'
+    );
   });
 
   test('can validate token in CTA-Common-Access-Token header', async () => {
@@ -51,10 +51,7 @@ describe('HTTP Request CAT Validator', () => {
       ],
       issuer: 'eyevinn'
     });
-    const result = await httpValidator.validateHttpRequest(
-      request,
-      'Symmetric256'
-    );
+    const result = await httpValidator.validateHttpRequest(request);
     expect(result.status).toBe(200);
   });
 
@@ -78,10 +75,56 @@ describe('HTTP Request CAT Validator', () => {
       ],
       issuer: 'eyevinn'
     });
-    const result = await httpValidator.validateHttpRequest(
-      request,
-      'Symmetric256'
-    );
+    const result = await httpValidator.validateHttpRequest(request);
     expect(result.status).toBe(401);
+  });
+
+  test('can handle multiple keys (under rotation)', async () => {
+    const generator = new CAT({
+      keys: {
+        keyone: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    const token = await generator.generate(
+      {
+        iss: 'eyevinn'
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'keyone'
+      }
+    );
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': token
+      }
+    });
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'keyon',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        },
+        {
+          kid: 'keytwo',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569389',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(200);
   });
 });
