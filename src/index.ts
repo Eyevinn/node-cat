@@ -9,6 +9,7 @@ export interface CatValidationOptions {
   alg?: string;
   kid: string;
   issuer: string;
+  audience?: string[];
 }
 
 export interface CatGenerateOptions {
