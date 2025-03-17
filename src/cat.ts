@@ -1,6 +1,11 @@
 import * as cbor from 'cbor-x';
 import cose from 'cose-js';
-import { InvalidIssuerError, TokenExpiredError } from './errors';
+import {
+  InvalidAudienceError,
+  InvalidClaimTypeError,
+  InvalidIssuerError,
+  TokenExpiredError
+} from './errors';
 import { CatValidationOptions } from '.';
 
 const claimsToLabels: { [key: string]: number } = {
@@ -63,6 +68,12 @@ const claimTransform: { [key: string]: (value: string) => Buffer } = {
 const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
   cti: (value: Buffer) => value.toString('hex'),
   cattpk: (value: Buffer) => value.toString('hex')
+};
+
+const claimTypeValidators: { [key: string]: (value: string) => boolean } = {
+  iss: (value) => typeof value === 'string',
+  exp: (value) => typeof value === 'number',
+  aud: (value) => typeof value === 'string' || Array.isArray(value)
 };
 
 const CWT_TAG = 61;
@@ -190,7 +201,20 @@ export class CommonAccessToken {
     return this;
   }
 
+  private async validateTypes() {
+    for (const [key, value] of this.payload) {
+      const claim = labelsToClaim[key];
+      if (claimTypeValidators[claim]) {
+        if (!claimTypeValidators[claim](value as string)) {
+          throw new InvalidClaimTypeError(claim, value as string);
+        }
+      }
+    }
+  }
+
   public async isValid(opts: CatValidationOptions): Promise<boolean> {
+    this.validateTypes();
+
     if (
       this.payload.get(claimsToLabels['iss']) &&
       this.payload.get(claimsToLabels['iss']) !== opts.issuer
@@ -202,6 +226,15 @@ export class CommonAccessToken {
       (this.payload.get(claimsToLabels['exp']) as number) < Date.now() / 1000
     ) {
       throw new TokenExpiredError();
+    }
+    if (opts.audience) {
+      const value = this.payload.get(claimsToLabels['aud']);
+      if (value) {
+        const claimAud = Array.isArray(value) ? value : [value];
+        if (!opts.audience.some((item) => claimAud.includes(item))) {
+          throw new InvalidAudienceError(claimAud as string[]);
+        }
+      }
     }
     return true;
   }

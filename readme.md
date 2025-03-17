@@ -26,26 +26,26 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 
 ### Core Claims
 
-| Claim | Validate |
-| ----- | ------ |
-| Issuer (`iss`) | Yes | 
-| Audience (`aud`) | No |
-| Expiration (`exp`) | Yes |
-| Not Before (`nbf`) | No |
-| CWT ID (`cti`) | No |
-| Common Access Token Replay (`catreplay`) | No |
-| Common Access Token Probability of Rejection (`catpor`) | No |
-| Common Access Token Version (`catv`) | No |
-| Common Access Token Network IP (`catnip`) | No |
-| Common Access Token URI (`catu`) | No |
-| Common Access Token Methods (`catm`) | No |
-| Common Access Token ALPN (`catalpn`) | No |
-| Common Access Token Header (`cath`) | No |
-| Common Access Token Geographic ISO3166 (`catgeoiso3166`) | No |
-| Common Access Token Geographic Coordinate (`catgeocoord`) | No |
-| Geohash (`geohash`) | No |
-| Common Access Token Altitude (`catgeoalt`) | No |
-| Common Access Token TLS Public Key (`cattpk`) | No |
+| Claim                                                     | Validate |
+| --------------------------------------------------------- | -------- |
+| Issuer (`iss`)                                            | Yes      |
+| Audience (`aud`)                                          | Yes      |
+| Expiration (`exp`)                                        | Yes      |
+| Not Before (`nbf`)                                        | No       |
+| CWT ID (`cti`)                                            | No       |
+|  Common Access Token Replay (`catreplay`)                 | No       |
+| Common Access Token Probability of Rejection (`catpor`)   | No       |
+| Common Access Token Version (`catv`)                      | No       |
+| Common Access Token Network IP (`catnip`)                 |  No      |
+| Common Access Token URI (`catu`)                          | No       |
+| Common Access Token Methods (`catm`)                      | No       |
+| Common Access Token ALPN (`catalpn`)                      |  No      |
+|  Common Access Token Header (`cath`)                      | No       |
+| Common Access Token Geographic ISO3166 (`catgeoiso3166`)  |  No      |
+| Common Access Token Geographic Coordinate (`catgeocoord`) | No       |
+|  Geohash (`geohash`)                                      | No       |
+|  Common Access Token Altitude (`catgeoalt`)               |  No      |
+|  Common Access Token TLS Public Key (`cattpk`)            | No       |
 
 ## Requirements
 
@@ -95,7 +95,7 @@ server.listen(8080, '127.0.0.1', () => {
 > User-Agent: curl/8.7.1
 > Accept: */*
 > CTA-Common-Access-Token: 2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w
-> 
+>
 * Request completely sent off
 < HTTP/1.1 401 Unauthorized
 < Content-Type: text/plain
@@ -103,7 +103,7 @@ server.listen(8080, '127.0.0.1', () => {
 < Connection: keep-alive
 < Keep-Alive: timeout=5
 < Transfer-Encoding: chunked
-< 
+<
 * Connection #0 to host localhost left intact
 Token has expired
 ```
@@ -119,10 +119,10 @@ const validator = new CAT({
       '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
       'hex'
     )
-  },
+  }
 });
 const base64encoded =
-  '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY'
+  '0YRDoQEEoQRMU3ltbWV0cmljMjU2eKZkOTAxMDNhNzAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmQwMjY1NmE2ZjZlNjE3MzAzNzgxODYzNmY2MTcwM2EyZjJmNmM2OTY3Njg3NDJlNjU3ODYxNmQ3MDZjNjUyZTYzNmY2ZDA0MWE1NjEyYWViMDA1MWE1NjEwZDlmMDA2MWE1NjEwZDlmMDA3NDIwYjcxSKuCk/+kFmlY';
 try {
   const cat = await validator.validate(base64encoded, 'mac', {
     kid: 'Symmetric256',
