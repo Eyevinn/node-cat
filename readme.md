@@ -31,21 +31,21 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 | Issuer (`iss`)                                            | Yes      |
 | Audience (`aud`)                                          | Yes      |
 | Expiration (`exp`)                                        | Yes      |
-| Not Before (`nbf`)                                        | No       |
+| Not Before (`nbf`)                                        | Yes      |
 | CWT ID (`cti`)                                            | No       |
-|  Common Access Token Replay (`catreplay`)                 | No       |
+| Common Access Token Replay (`catreplay`)                  | No       |
 | Common Access Token Probability of Rejection (`catpor`)   | No       |
 | Common Access Token Version (`catv`)                      | No       |
-| Common Access Token Network IP (`catnip`)                 |  No      |
+| Common Access Token Network IP (`catnip`)                 | No       |
 | Common Access Token URI (`catu`)                          | No       |
 | Common Access Token Methods (`catm`)                      | No       |
-| Common Access Token ALPN (`catalpn`)                      |  No      |
-|  Common Access Token Header (`cath`)                      | No       |
-| Common Access Token Geographic ISO3166 (`catgeoiso3166`)  |  No      |
+| Common Access Token ALPN (`catalpn`)                      | No       |
+| Common Access Token Header (`cath`)                       | No       |
+| Common Access Token Geographic ISO3166 (`catgeoiso3166`)  | No       |
 | Common Access Token Geographic Coordinate (`catgeocoord`) | No       |
-|  Geohash (`geohash`)                                      | No       |
-|  Common Access Token Altitude (`catgeoalt`)               |  No      |
-|  Common Access Token TLS Public Key (`cattpk`)            | No       |
+| Geohash (`geohash`)                                       | No       |
+| Common Access Token Altitude (`catgeoalt`)                | No       |
+| Common Access Token TLS Public Key (`cattpk`)             | No       |
 
 ## Requirements
 
