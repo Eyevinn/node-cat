@@ -32,7 +32,7 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 | Audience (`aud`)                                          | Yes      |
 | Expiration (`exp`)                                        | Yes      |
 | Not Before (`nbf`)                                        | Yes      |
-| CWT ID (`cti`)                                            | No       |
+| CWT ID (`cti`)                                            | Yes      |
 | Common Access Token Replay (`catreplay`)                  | No       |
 | Common Access Token Probability of Rejection (`catpor`)   | No       |
 | Common Access Token Version (`catv`)                      | No       |
@@ -191,13 +191,13 @@ const base64encoded = await generator.generate(
     aud: 'coap://light.example.com',
     exp: 1444064944,
     nbf: 1443944944,
-    iat: 1443944944,
-    cti: '0b71'
+    iat: 1443944944
   },
   {
     type: 'mac',
     alg: 'HS256',
-    kid: 'Symmetric256'
+    kid: 'Symmetric256',
+    generateCwtId: true // automatically generate a random CWT Id (cti) claim (default: false)
   }
 );
 ```

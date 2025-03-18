@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
 import { KeyNotFoundError } from './errors';
 
@@ -17,6 +18,7 @@ export interface CatGenerateOptions {
   type: CatValidationTypes;
   alg: string;
   kid: string;
+  generateCwtId?: boolean;
 }
 
 /**
@@ -123,6 +125,9 @@ export class CAT {
     claims: { [key: string]: string | number | Map<number, any> },
     opts?: CatGenerateOptions
   ) {
+    if (opts?.generateCwtId) {
+      claims['cti'] = crypto.randomBytes(16).toString('hex');
+    }
     const cat = new CommonAccessToken(claims);
     if (opts && opts.type == 'mac') {
       const key = this.keys[opts.kid];
