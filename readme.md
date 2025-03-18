@@ -81,6 +81,7 @@ const server = http.createServer((req, res) => {
   const result = await httpValidator.validateHttpRequest(
     req
   );
+  console.log(result.claims);
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });
@@ -141,6 +142,9 @@ export const handler = async (
   const result = await httpValidator.validateCloudFrontRequest(request);
   response.status = result.status;
   response.statusDescription = result.message;
+  if (result.claims) {
+    console.log(result.claims);
+  }
   callback(null, response);
 };
 ```
