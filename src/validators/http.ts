@@ -1,4 +1,4 @@
-import { IncomingMessage } from 'node:http';
+import { IncomingMessage, OutgoingMessage } from 'node:http';
 import { CAT } from '..';
 import {
   InvalidAudienceError,
@@ -7,7 +7,11 @@ import {
   TokenExpiredError,
   UriNotAllowedError
 } from '../errors';
-import { CloudFrontRequest } from 'aws-lambda';
+import {
+  CloudFrontHeaders,
+  CloudFrontRequest,
+  CloudFrontResponse
+} from 'aws-lambda';
 import { CommonAccessTokenDict } from '../cat';
 
 interface HttpValidatorKey {
@@ -17,6 +21,9 @@ interface HttpValidatorKey {
 
 export interface HttpValidatorOptions {
   tokenMandatory?: boolean;
+  autoRenewEnabled?: boolean;
+  tokenUriParam?: string;
+  alg?: string;
   keys: HttpValidatorKey[];
   issuer: string;
   audience?: string[];
@@ -60,6 +67,7 @@ export class NoTokenFoundError extends Error {
 export class HttpValidator {
   private keys: { [key: string]: Buffer } = {};
   private opts: HttpValidatorOptions;
+  private tokenUriParam: string;
 
   constructor(opts: HttpValidatorOptions) {
     opts.keys.forEach((k: HttpValidatorKey) => {
@@ -67,16 +75,19 @@ export class HttpValidator {
     });
     this.opts = opts;
     this.opts.tokenMandatory = opts.tokenMandatory ?? true;
+    this.opts.autoRenewEnabled = opts.autoRenewEnabled ?? true;
+    this.tokenUriParam = opts.tokenUriParam ?? 'cat';
   }
 
   public async validateCloudFrontRequest(
     cfRequest: CloudFrontRequest
-  ): Promise<HttpResponse> {
+  ): Promise<HttpResponse & { cfResponse: CloudFrontResponse }> {
     const requestLike: Pick<IncomingMessage, 'headers'> &
       Pick<IncomingMessage, 'url'> = {
       headers: {},
       url: ''
     };
+    const response = new OutgoingMessage();
 
     if (cfRequest.headers) {
       Object.entries(cfRequest.headers).forEach(([name, header]) => {
@@ -89,11 +100,25 @@ export class HttpValidator {
     }
     requestLike.url = cfRequest.uri;
 
-    return await this.validateHttpRequest(requestLike as IncomingMessage);
+    const result = await this.validateHttpRequest(
+      requestLike as IncomingMessage,
+      response
+    );
+    const cfHeaders: CloudFrontHeaders = {};
+    Object.entries(response.getHeaders()).forEach(([name, value]) => {
+      cfHeaders[name] = [{ key: name, value: value as string }];
+    });
+    const cfResponse: CloudFrontResponse = {
+      status: result.status.toString(),
+      statusDescription: result.message || 'ok',
+      headers: cfHeaders
+    };
+    return { ...result, cfResponse: cfResponse };
   }
 
   public async validateHttpRequest(
-    request: IncomingMessage
+    request: IncomingMessage,
+    response?: OutgoingMessage
   ): Promise<HttpResponse> {
     const validator = new CAT({
       keys: this.keys
@@ -106,11 +131,21 @@ export class HttpValidator {
     }
 
     let cat;
+    const headerName = 'cta-common-access-token';
+    let catrType;
+    let token;
+
     // Check for token in headers first
-    if (request.headers['cta-common-access-token']) {
-      const token = Array.isArray(request.headers['cta-common-access-token'])
-        ? request.headers['cta-common-access-token'][0]
-        : request.headers['cta-common-access-token'];
+    if (request.headers[headerName]) {
+      token = Array.isArray(request.headers[headerName])
+        ? request.headers[headerName][0]
+        : request.headers[headerName];
+      catrType = 'header';
+    } else if (url && url.searchParams.has(this.tokenUriParam)) {
+      token = url.searchParams.get(this.tokenUriParam);
+      catrType = 'query';
+    }
+    if (token) {
       try {
         const result = await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
@@ -119,6 +154,55 @@ export class HttpValidator {
         });
         cat = result.cat;
         if (!result.error) {
+          // CAT is acceptable
+          if (
+            cat &&
+            cat?.shouldRenew &&
+            this.opts.autoRenewEnabled &&
+            response &&
+            cat.keyId
+          ) {
+            // Renew token
+            const renewedToken = await validator.renewToken(cat, {
+              type: 'mac',
+              issuer: this.opts.issuer,
+              kid: cat.keyId,
+              alg: this.opts.alg || 'HS256'
+            });
+            const catr = cat.claims.catr as any;
+            if (
+              catr.type === 'header' ||
+              (catr.type === 'automatic' && catrType === 'header')
+            ) {
+              response.setHeader(
+                catr['header-name'] || headerName,
+                renewedToken +
+                  (catr['header-params'] ? `;${catr['header-params']}` : '')
+              );
+            } else if (
+              catr.type === 'cookie' ||
+              (catr.type === 'automatic' && catrType === 'cookie')
+            ) {
+              const cookieName =
+                catr['cookie-name'] || 'cta-common-access-token';
+              response.setHeader(
+                'Set-Cookie',
+                `${cookieName}=${renewedToken}${
+                  catr['cookie-params'] ? '; ' + catr['cookie-params'] : ''
+                }`
+              );
+            } else if (
+              catr.type === 'redirect' ||
+              (catr.type === 'automatic' && catrType === 'query')
+            ) {
+              if (url) {
+                const redirectUrl = url;
+                redirectUrl.searchParams.delete(this.tokenUriParam);
+                redirectUrl.searchParams.set(this.tokenUriParam, renewedToken);
+                response.setHeader('Location', redirectUrl.toString());
+              }
+            }
+          }
           return { status: 200, claims: cat?.claims };
         } else {
           return {

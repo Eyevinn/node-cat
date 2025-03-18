@@ -21,6 +21,13 @@ export interface CatGenerateOptions {
   generateCwtId?: boolean;
 }
 
+export interface CatRenewOptions {
+  type: CatValidationTypes;
+  alg: string;
+  kid: string;
+  issuer: string;
+}
+
 export interface CatValidationResult {
   cat?: CommonAccessToken;
   error?: Error;
@@ -152,5 +159,29 @@ export class CAT {
       }
       return cat.raw.toString('base64');
     }
+  }
+
+  public async renewToken(
+    cat: CommonAccessToken,
+    opts: CatRenewOptions
+  ): Promise<string> {
+    const newClaims = cat.claims;
+    newClaims['cti'] = crypto.randomBytes(16).toString('hex');
+    newClaims['iat'] = Math.floor(Date.now() / 1000);
+    newClaims['iss'] = opts.issuer;
+    newClaims['exp'] = newClaims['iat'] + (newClaims['catr'] as any)['expadd'];
+    const newCat = CommonAccessTokenFactory.fromDict(newClaims);
+
+    const key = this.keys[opts.kid];
+    if (!key) {
+      throw new KeyNotFoundError();
+    }
+    await newCat.mac({ k: key, kid: opts.kid }, opts.alg, {
+      addCwtTag: this.expectCwtTag
+    });
+    if (!newCat.raw) {
+      throw new Error('Failed to MAC token');
+    }
+    return newCat.raw.toString('base64');
   }
 }

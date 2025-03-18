@@ -1,4 +1,5 @@
 import { CAT } from '.';
+import { CommonAccessTokenRenewal } from './catr';
 import { CommonAccessTokenUri } from './catu';
 import {
   InvalidAudienceError,
@@ -347,5 +348,40 @@ describe('CAT claims', () => {
     expect(result.error).not.toBeDefined();
     expect(result.cat).toBeDefined();
     expect(result.cat!.claims.cti).toBeDefined();
+  });
+
+  test('can renew a token', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        exp: now,
+        catr: CommonAccessTokenRenewal.fromDict({
+          type: 'header',
+          'header-name': 'cta-common-access-token',
+          expadd: 120,
+          deadline: 60
+        }).payload
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    const renewed = await validator.renewToken(result.cat!, {
+      type: 'mac',
+      issuer: 'renew',
+      kid: 'Symmetric256',
+      alg: 'HS256'
+    });
+    const result2 = await validator.validate(renewed, 'mac', {
+      issuer: 'renew'
+    });
+    expect((result2.cat?.claims.exp as number) - now == 120).toBeTruthy();
   });
 });

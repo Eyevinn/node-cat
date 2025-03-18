@@ -4,12 +4,14 @@ import {
   InvalidAudienceError,
   InvalidClaimTypeError,
   InvalidIssuerError,
+  RenewalClaimError,
   TokenExpiredError,
   TokenNotActiveError,
   UriNotAllowedError
 } from './errors';
 import { CatValidationOptions } from '.';
 import { CommonAccessTokenUri } from './catu';
+import { CommonAccessTokenRenewal } from './catr';
 
 const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -131,9 +133,34 @@ function updateMapFromClaims(
   return map;
 }
 
+function updateMapFromDict(
+  dict: CommonAccessTokenDict
+): CommonAccessTokenClaims {
+  const claims: CommonAccessTokenClaims = {};
+  for (const param in dict) {
+    const key = claimsToLabels[param];
+    if (param === 'catu') {
+      claims[key] = CommonAccessTokenUri.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else if (param === 'catr') {
+      claims[key] = CommonAccessTokenRenewal.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else {
+      const value = claimTransform[param]
+        ? claimTransform[param](dict[param] as string)
+        : dict[param];
+      claims[key] = value as string | number;
+    }
+  }
+  return claims;
+}
+
 export class CommonAccessToken {
   private payload: Map<number, CommonAccessTokenValue>;
   private data?: Buffer;
+  private kid?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
     this.payload = updateMapFromClaims(claims);
@@ -168,6 +195,7 @@ export class CommonAccessToken {
       const plaintext = cbor.encode(this.payload).toString('hex');
       this.data = await cose.mac.create(headers, plaintext, recipient);
     }
+    this.kid = key.kid;
   }
 
   public async parse(
@@ -190,6 +218,7 @@ export class CommonAccessToken {
       const buf = await cose.mac.read(token, key.k);
       this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
     }
+    this.kid = key.kid;
   }
 
   public async sign(key: CWTSigningKey, alg: string): Promise<void> {
@@ -266,13 +295,38 @@ export class CommonAccessToken {
         throw new UriNotAllowedError(`URI ${opts.url} not allowed`);
       }
     }
+    if (this.payload.get(claimsToLabels['catr'])) {
+      const catr = CommonAccessTokenRenewal.fromMap(
+        this.payload.get(claimsToLabels['catr']) as Map<number, any>
+      );
+      if (!catr.isValid()) {
+        throw new RenewalClaimError('Invalid renewal claim');
+      }
+    }
 
     return true;
   }
 
-  get(key: string) {
-    const theKey = claimsToLabels[key] ? claimsToLabels[key] : parseInt(key);
-    return this.payload.get(theKey);
+  get shouldRenew(): boolean {
+    const exp = this.payload.get(claimsToLabels['exp']) as number;
+    if (exp) {
+      const catr = this.payload.get(claimsToLabels['catr']);
+      if (catr) {
+        const renewal = CommonAccessTokenRenewal.fromMap(
+          catr as Map<number, any>
+        ).toDict();
+        const now = Math.floor(Date.now() / 1000);
+        let lowThreshold = exp - 1 * 60;
+        if (renewal.deadline !== undefined) {
+          lowThreshold = exp - renewal.deadline;
+        }
+        //console.log(`${now} >= ${lowThreshold} && ${now} < ${exp}`);
+        if (now >= lowThreshold && now < exp) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   get claims(): CommonAccessTokenDict {
@@ -281,6 +335,10 @@ export class CommonAccessToken {
       const key = labelsToClaim[param] ? labelsToClaim[param] : param;
       if (key === 'catu') {
         result[key] = CommonAccessTokenUri.fromMap(
+          value as Map<number, any>
+        ).toDict();
+      } else if (key === 'catr') {
+        result[key] = CommonAccessTokenRenewal.fromMap(
           value as Map<number, any>
         ).toDict();
       } else {
@@ -299,6 +357,10 @@ export class CommonAccessToken {
 
   get base64() {
     return this.data?.toString('base64');
+  }
+
+  get keyId() {
+    return this.kid;
   }
 }
 
@@ -321,6 +383,11 @@ export class CommonAccessTokenFactory {
     const token = Buffer.from(base64encoded, 'base64');
     const cat = new CommonAccessToken({});
     await cat.parse(token, key, { expectCwtTag });
+    return cat;
+  }
+
+  public static fromDict(claims: CommonAccessTokenDict) {
+    const cat = new CommonAccessToken(updateMapFromDict(claims));
     return cat;
   }
 }

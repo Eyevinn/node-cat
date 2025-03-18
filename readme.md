@@ -20,7 +20,14 @@
 
 </div>
 
-This is a Node library for generating and validating Common Access Tokens (CTA-5007)
+This is a Node library for generating and validating Common Access Tokens (CTA-5007).
+
+Features:
+
+- Generate and Validate Common Access Tokens. Supported claims in table below.
+- HTTP and CloudFront Lambda handlers supporting
+  - Validation and parsing of tokens
+  - Handle automatic renewal of tokens
 
 ## Claims Validation Support
 
@@ -46,6 +53,7 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 | Geohash (`geohash`)                                       | No       |
 | Common Access Token Altitude (`catgeoalt`)                | No       |
 | Common Access Token TLS Public Key (`cattpk`)             | No       |
+| Common ACcess Token Renewal (`catr`) claim                | Yes      |
 
 ## Requirements
 
@@ -72,6 +80,7 @@ const httpValidator = new HttpValidator({
       )
     }
   ],
+  autoRenewEnabled: true // Token renewal enabled. Optional (default: true)
   tokenMandatory: true // Optional (default: true)
   issuer: 'eyevinn',
   audience: ['one', 'two'] // Optional
@@ -79,9 +88,10 @@ const httpValidator = new HttpValidator({
 
 const server = http.createServer((req, res) => {
   const result = await httpValidator.validateHttpRequest(
-    req
+    req, res
   );
-  console.log(result.claims);
+  console.log(result.claims); // Claims
+  console.log(res.getHeaders('cta-common-access-token')); // Renewed token
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });
@@ -140,8 +150,9 @@ export const handler = async (
   const request = event.Records[0].cf.request;
   const response = event.Records[0].cf.response;
   const result = await httpValidator.validateCloudFrontRequest(request);
-  response.status = result.status;
-  response.statusDescription = result.message;
+  // If renewed new token is found here given catr type is "header"
+  console.log(result.cfResponse.headers['cta-common-access-token']);
+  response = result.cfResponse;
   if (result.claims) {
     console.log(result.claims);
   }

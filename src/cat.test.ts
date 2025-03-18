@@ -1,4 +1,5 @@
 import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
+import { CommonAccessTokenRenewal } from './catr';
 
 describe('CAT', () => {
   test('can create a CAT object and return claims as JSON', () => {
@@ -127,5 +128,80 @@ describe('CAT', () => {
       iat: 1443944944,
       cti: '0b71'
     });
+  });
+
+  test('can provide information about renewal mechanism', async () => {
+    const cat = new CommonAccessToken({
+      iss: 'eyevinn',
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'header',
+        'header-name': 'cta-common-access-token'
+      }).payload
+    });
+    expect(cat.claims.catr).toEqual({
+      type: 'header',
+      'header-name': 'cta-common-access-token'
+    });
+  });
+
+  test('can create a CAT object from a dict', async () => {
+    const cat = CommonAccessTokenFactory.fromDict({
+      iss: 'eyevinn',
+      sub: 'jonas',
+      aud: 'coap://light.example.com',
+      exp: 1444064944,
+      nbf: 1443944944,
+      iat: 1443944944,
+      cti: '0b71',
+      catr: {
+        type: 'header',
+        'header-name': 'cta-common-access-token'
+      }
+    });
+    expect(cat.claims).toEqual({
+      iss: 'eyevinn',
+      sub: 'jonas',
+      aud: 'coap://light.example.com',
+      exp: 1444064944,
+      nbf: 1443944944,
+      iat: 1443944944,
+      cti: '0b71',
+      catr: {
+        type: 'header',
+        'header-name': 'cta-common-access-token'
+      }
+    });
+  });
+
+  test('can determine whether the token should be renewed', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const cat = new CommonAccessToken({
+      iss: 'eyevinn',
+      exp: now + 30,
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'automatic',
+        expadd: 60
+      }).payload
+    });
+    expect(cat.shouldRenew).toBe(true);
+    const cat2 = new CommonAccessToken({
+      iss: 'eyevinn',
+      exp: now + 100,
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'automatic',
+        expadd: 60
+      }).payload
+    });
+    expect(cat2.shouldRenew).toBe(false);
+    const cat3 = new CommonAccessToken({
+      iss: 'eyevinn',
+      exp: now + 100,
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'automatic',
+        expadd: 60,
+        deadline: 105
+      }).payload
+    });
+    expect(cat3.shouldRenew).toBe(true);
   });
 });

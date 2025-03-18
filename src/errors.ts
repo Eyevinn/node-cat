@@ -47,3 +47,9 @@ export class UriNotAllowedError extends Error {
     super(reason);
   }
 }
+
+export class RenewalClaimError extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}
