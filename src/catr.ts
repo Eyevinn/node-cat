@@ -73,6 +73,16 @@ export class CommonAccessTokenRenewal {
     return result;
   }
 
+  isValid() {
+    if (this.catrMap.get(catrPartToLabel['type']) === undefined) {
+      return false;
+    }
+    if (this.catrMap.get(catrPartToLabel['expadd']) === undefined) {
+      return false;
+    }
+    return true;
+  }
+
   get renewalType(): CatrRenewalType {
     const type = this.catrMap.get(catrPartToLabel['type']);
     return labelsToCatrRenewalType[type as number];

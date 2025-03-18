@@ -4,6 +4,7 @@ import {
   InvalidAudienceError,
   InvalidClaimTypeError,
   InvalidIssuerError,
+  RenewalClaimError,
   TokenExpiredError,
   TokenNotActiveError,
   UriNotAllowedError
@@ -267,13 +268,37 @@ export class CommonAccessToken {
         throw new UriNotAllowedError(`URI ${opts.url} not allowed`);
       }
     }
+    if (this.payload.get(claimsToLabels['catr'])) {
+      const catr = CommonAccessTokenRenewal.fromMap(
+        this.payload.get(claimsToLabels['catr']) as Map<number, any>
+      );
+      if (!catr.isValid()) {
+        throw new RenewalClaimError('Invalid renewal claim');
+      }
+    }
 
     return true;
   }
 
-  get(key: string) {
-    const theKey = claimsToLabels[key] ? claimsToLabels[key] : parseInt(key);
-    return this.payload.get(theKey);
+  get shouldRenew(): boolean {
+    const exp = this.payload.get(claimsToLabels['exp']) as number;
+    if (exp) {
+      const catr = this.payload.get(claimsToLabels['catr']);
+      if (catr) {
+        const renewal = CommonAccessTokenRenewal.fromMap(
+          catr as Map<number, any>
+        ).toDict();
+        const now = Math.floor(Date.now() / 1000);
+        let lowThreshold = exp - 1 * 60;
+        if (renewal.deadline !== undefined) {
+          lowThreshold = exp - renewal.deadline * 60;
+        }
+        if (now >= lowThreshold && now < exp) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   get claims(): CommonAccessTokenDict {

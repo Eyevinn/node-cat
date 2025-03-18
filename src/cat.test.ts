@@ -143,4 +143,36 @@ describe('CAT', () => {
       'header-name': 'cta-common-access-token'
     });
   });
+
+  test('can determine whether the token should be renewed', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const cat = new CommonAccessToken({
+      iss: 'eyevinn',
+      exp: now + 30,
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'automatic',
+        extadd: 60
+      }).payload
+    });
+    expect(cat.shouldRenew).toBe(true);
+    const cat2 = new CommonAccessToken({
+      iss: 'eyevinn',
+      exp: now + 100,
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'automatic',
+        extadd: 60
+      }).payload
+    });
+    expect(cat2.shouldRenew).toBe(false);
+    const cat3 = new CommonAccessToken({
+      iss: 'eyevinn',
+      exp: now + 100,
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'automatic',
+        extadd: 60,
+        deadline: 105
+      }).payload
+    });
+    expect(cat3.shouldRenew).toBe(true);
+  });
 });
