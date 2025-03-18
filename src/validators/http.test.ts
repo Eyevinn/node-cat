@@ -267,4 +267,49 @@ describe('HTTP Request CAT Validator', () => {
     });
     expect(result.status).toBe(200);
   });
+
+  test('can get parsed claims from token', async () => {
+    const token =
+      '2D3RhEOhAQW5AAFhNExTeW1tZXRyaWMyNTZYO9kBA6IBZ2V5ZXZpbm4ZATjZAQOjANkBA6EAZWh0dHBzA9kBA6EBaC9jb250ZW50CNkBA6EAZS5tM3U4WCCD42NQN46M44nvyg4eD4tKUo2+spMlXhtOHW3IiUFiXg==';
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateCloudFrontRequest({
+      clientIp: 'dummy',
+      method: 'GET',
+      uri: '/content/path/file.m3u8',
+      querystring: '',
+      headers: {
+        'cta-common-access-token': [
+          {
+            value: token
+          }
+        ],
+        host: [
+          {
+            key: 'Host',
+            value: 'example.com'
+          }
+        ]
+      }
+    });
+    expect(result.status).toBe(200);
+    expect(result.claims).toEqual({
+      iss: 'eyevinn',
+      catu: {
+        scheme: { 'exact-match': 'https' },
+        path: { 'prefix-match': '/content' },
+        extension: { 'exact-match': '.m3u8' }
+      }
+    });
+  });
 });

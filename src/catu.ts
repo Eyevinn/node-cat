@@ -228,6 +228,19 @@ export class CommonAccessTokenUri {
     return true;
   }
 
+  toDict() {
+    const result: { [key: string]: any } = {};
+    this.catuMap.forEach((uriPartMap, uriPart) => {
+      const part = labelsToUriPart[uriPart];
+      const match: { [key: string]: any } = {};
+      uriPartMap.forEach((value, matchType) => {
+        match[labelsToMatch[matchType]] = value;
+      });
+      result[part] = match;
+    });
+    return result;
+  }
+
   get payload() {
     return this.catuMap;
   }

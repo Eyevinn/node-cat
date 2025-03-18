@@ -85,6 +85,9 @@ const CWT_TAG = 61;
 export type CommonAccessTokenClaims = {
   [key: string]: string | number | Map<number, any>;
 };
+export type CommonAccessTokenDict = {
+  [key: string]: string | number | { [key: string]: any };
+};
 export type CommonAccessTokenValue =
   | string
   | number
@@ -272,14 +275,20 @@ export class CommonAccessToken {
     return this.payload.get(theKey);
   }
 
-  get claims() {
-    const result: { [key: string]: string | number } = {};
+  get claims(): CommonAccessTokenDict {
+    const result: CommonAccessTokenDict = {};
     this.payload.forEach((value, param) => {
       const key = labelsToClaim[param] ? labelsToClaim[param] : param;
-      const theValue = claimTransformReverse[key]
-        ? claimTransformReverse[key](value as Buffer)
-        : (value as string | number);
-      result[key] = theValue;
+      if (key === 'catu') {
+        result[key] = CommonAccessTokenUri.fromMap(
+          value as Map<number, any>
+        ).toDict();
+      } else {
+        const theValue = claimTransformReverse[key]
+          ? claimTransformReverse[key](value as Buffer)
+          : (value as string | number);
+        result[key] = theValue;
+      }
     });
     return result;
   }
