@@ -21,6 +21,11 @@ export interface CatGenerateOptions {
   generateCwtId?: boolean;
 }
 
+export interface CatValidationResult {
+  cat?: CommonAccessToken;
+  error?: Error;
+}
+
 /**
  * Options for the CAT object
  *
@@ -76,7 +81,7 @@ export class CAT {
     token: string,
     type: CatValidationTypes,
     opts: CatValidationOptions
-  ) {
+  ): Promise<CatValidationResult> {
     const tokenWithoutPadding = token.trim();
     let cat;
     if (type == 'mac') {
@@ -114,11 +119,16 @@ export class CAT {
       throw new Error('Unsupported validation type');
     }
     if (cat) {
-      const valid = await cat.isValid(opts);
-      if (valid) {
-        return cat;
+      try {
+        const valid = await cat.isValid(opts);
+        if (valid) {
+          return { cat, error: undefined };
+        }
+      } catch (err) {
+        return { cat, error: err as Error };
       }
     }
+    return { error: new Error('Unable to parse token') };
   }
 
   public async generate(
