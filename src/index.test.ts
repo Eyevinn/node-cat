@@ -37,11 +37,12 @@ describe('CAT', () => {
         )
       }
     });
-    const cat = await validator.validate(base64encoded!, 'mac', {
+    const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'coap://as.example.com'
     });
-    expect(cat).toBeDefined();
-    expect(cat!.claims).toEqual({
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims).toEqual({
       iss: 'coap://as.example.com'
     });
   });
@@ -57,11 +58,12 @@ describe('CAT', () => {
         )
       }
     });
-    const cat = await validator.validate(base64encoded, 'mac', {
+    const result = await validator.validate(base64encoded, 'mac', {
       issuer: 'coap://as.example.com'
     });
-    expect(cat).toBeDefined();
-    expect(cat!.claims).toEqual({
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims).toEqual({
       iss: 'coap://as.example.com'
     });
   });
@@ -78,11 +80,12 @@ describe('CAT', () => {
       },
       expectCwtTag: true
     });
-    const cat = await validator.validate(base64encoded, 'mac', {
+    const result = await validator.validate(base64encoded, 'mac', {
       issuer: 'coap://jonas.example.com'
     });
-    expect(cat).toBeDefined();
-    expect(cat!.claims).toEqual({
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims).toEqual({
       iss: 'coap://jonas.example.com',
       iat: 1741985961,
       nbf: 1741985961
@@ -183,53 +186,53 @@ describe('CAT claims', () => {
   test('fail if wrong issuer', async () => {
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2VKMBZWpvbmFzBhpn12U-BRpn12U-WCDf1xHvhcnvyXUxd-DP4RAbayc8nC2PLJPPPbF3S00ruw';
-    await expect(
-      validator.validate(base64encoded, 'mac', {
-        issuer: 'coap://jonas.example.com'
-      })
-    ).rejects.toThrow(InvalidIssuerError);
+    const result = await validator.validate(base64encoded, 'mac', {
+      issuer: 'coap://jonas.example.com'
+    });
+    expect(result.error).toBeInstanceOf(InvalidIssuerError);
   });
 
   test('pass if token has not expired', async () => {
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGnUCOrsGGmfXRKwFGmfXRKxYIOM6yRx830uqAamWFv1amFYRa5vaV2z5lIQTqFEvFh8z';
-    const cat = validator.validate(base64encoded, 'mac', {
+    const result = await validator.validate(base64encoded, 'mac', {
       issuer: 'eyevinn'
     });
-    expect(cat).toBeDefined();
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
   });
 
   test('fail if token expired', async () => {
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2U6MEGmfXP_YGGmfXQAsFGmfXQAtYINTT_KlOyhaV6NaSxFXkqJWfBagSkPkem10dysoA-C0w';
-    await expect(
-      validator.validate(base64encoded, 'mac', {
-        issuer: 'eyevinn'
-      })
-    ).rejects.toThrow(TokenExpiredError);
+
+    const result = await validator.validate(base64encoded, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(result.error).toBeInstanceOf(TokenExpiredError);
   });
 
   test('pass if token has a valid audience', async () => {
     // {"aud": ["one", "two"]}
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2V6MDgmNvbmVjdHdvBhpn12R8BRpn12R8WCAdnSbUN4KbIvaHLn-q4f4YRpfq6ERYotByjbIyZ-EkfQ';
-    const cat = validator.validate(base64encoded, 'mac', {
+    const result = await validator.validate(base64encoded, 'mac', {
       issuer: 'eyevinn',
       audience: ['one', 'three']
     });
-    expect(cat).toBeDefined();
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
   });
 
   test('fail if token has an invalid audience', async () => {
     // {"aud": ["one", "two"]}
     const base64encoded =
       '2D3RhEOhAQWhBFBha2FtYWlfa2V5X2hzMjU2V6MDgmNvbmVjdHdvBhpn12R8BRpn12R8WCAdnSbUN4KbIvaHLn-q4f4YRpfq6ERYotByjbIyZ-EkfQ';
-    await expect(
-      validator.validate(base64encoded, 'mac', {
-        issuer: 'eyevinn',
-        audience: ['three']
-      })
-    ).rejects.toThrow(InvalidAudienceError);
+    const result = await validator.validate(base64encoded, 'mac', {
+      issuer: 'eyevinn',
+      audience: ['three']
+    });
+    expect(result.error).toBeInstanceOf(InvalidAudienceError);
   });
 
   test('fail if token is not active yet', async () => {
@@ -245,11 +248,10 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
-    await expect(
-      validator.validate(base64encoded!, 'mac', {
-        issuer: 'eyevinn'
-      })
-    ).rejects.toThrow(TokenNotActiveError);
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(result.error).toBeInstanceOf(TokenNotActiveError);
   });
 
   test('pass if token is active', async () => {
@@ -265,10 +267,11 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
-    const cat = await validator.validate(base64encoded!, 'mac', {
+    const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
-    expect(cat).toBeDefined();
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
   });
 
   test('pass if token has a catu claim that matches url', async () => {
@@ -293,17 +296,17 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
-    const cat = await validator.validate(base64encoded!, 'mac', {
+    const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn',
       url: new URL('https://example.com/content/path/file.m3u8')
     });
-    expect(cat).toBeDefined();
-    await expect(
-      validator.validate(base64encoded!, 'mac', {
-        issuer: 'eyevinn',
-        url: new URL('https://example.com/content/path/file.ts')
-      })
-    ).rejects.toThrow(UriNotAllowedError);
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    const result2 = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn',
+      url: new URL('https://example.com/content/path/file.ts')
+    });
+    expect(result2.error).toBeInstanceOf(UriNotAllowedError);
   });
 
   test('can provide CWT Id claim', async () => {
@@ -318,11 +321,12 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
-    const cat = await validator.validate(base64encoded!, 'mac', {
+    const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
-    expect(cat).toBeDefined();
-    expect(cat!.claims.cti).toEqual('a47019af6305d3652a918ae356cc2ca2');
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims.cti).toEqual('a47019af6305d3652a918ae356cc2ca2');
   });
 
   test('can auto generate a CWT Id claim', async () => {
@@ -337,10 +341,11 @@ describe('CAT claims', () => {
         generateCwtId: true
       }
     );
-    const cat = await validator.validate(base64encoded!, 'mac', {
+    const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
-    expect(cat).toBeDefined();
-    expect(cat!.claims.cti).toBeDefined();
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims.cti).toBeDefined();
   });
 });

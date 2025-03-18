@@ -30,10 +30,11 @@ describe('CAT library can validate a token that someone else has generated', () 
           '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388'
       }
     );
-    const cat = await validator.validate(token, 'mac', {
+    const result = await validator.validate(token, 'mac', {
       issuer: 'eyevinn'
     });
-    expect(cat).toBeDefined();
-    expect(cat!.claims.iss).toBe('eyevinn');
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims.iss).toBe('eyevinn');
   });
 });

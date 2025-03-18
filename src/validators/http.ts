@@ -105,18 +105,28 @@ export class HttpValidator {
       url = new URL(`https://${host}${request.url}`);
     }
 
+    let cat;
     // Check for token in headers first
     if (request.headers['cta-common-access-token']) {
       const token = Array.isArray(request.headers['cta-common-access-token'])
         ? request.headers['cta-common-access-token'][0]
         : request.headers['cta-common-access-token'];
       try {
-        const cat = await validator.validate(token, 'mac', {
+        const result = await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
           audience: this.opts.audience,
           url
         });
-        return { status: 200, claims: cat?.claims };
+        cat = result.cat;
+        if (!result.error) {
+          return { status: 200, claims: cat?.claims };
+        } else {
+          return {
+            status: 401,
+            message: result.error.message,
+            claims: cat?.claims
+          };
+        }
       } catch (err) {
         if (
           err instanceof InvalidIssuerError ||
@@ -125,7 +135,11 @@ export class HttpValidator {
           err instanceof TokenExpiredError ||
           err instanceof UriNotAllowedError
         ) {
-          return { status: 401, message: (err as Error).message };
+          return {
+            status: 401,
+            message: (err as Error).message,
+            claims: cat?.claims
+          };
         } else {
           console.log(`Internal error`, err);
           return { status: 500, message: (err as Error).message };
