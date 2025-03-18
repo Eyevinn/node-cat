@@ -23,6 +23,7 @@
 This is a Node library for generating and validating Common Access Tokens (CTA-5007).
 
 Features:
+
 - Generate and Validate Common Access Tokens. Supported claims in table below.
 - HTTP and CloudFront Lambda handlers supporting
   - Validation and parsing of tokens
