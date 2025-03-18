@@ -359,7 +359,8 @@ describe('CAT claims', () => {
         catr: CommonAccessTokenRenewal.fromDict({
           type: 'header',
           'header-name': 'cta-common-access-token',
-          expadd: 120
+          expadd: 120,
+          deadline: 60
         }).payload
       },
       {

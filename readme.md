@@ -72,6 +72,7 @@ const httpValidator = new HttpValidator({
       )
     }
   ],
+  autoRenewEnabled: true // Token renewal enabled. Optional (default: true)
   tokenMandatory: true // Optional (default: true)
   issuer: 'eyevinn',
   audience: ['one', 'two'] // Optional
@@ -79,9 +80,10 @@ const httpValidator = new HttpValidator({
 
 const server = http.createServer((req, res) => {
   const result = await httpValidator.validateHttpRequest(
-    req
+    req, res
   );
-  console.log(result.claims);
+  console.log(result.claims); // Claims
+  console.log(res.getHeaders('cta-common-access-token')); // Renewed token
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });

@@ -160,6 +160,7 @@ function updateMapFromDict(
 export class CommonAccessToken {
   private payload: Map<number, CommonAccessTokenValue>;
   private data?: Buffer;
+  private kid?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
     this.payload = updateMapFromClaims(claims);
@@ -194,6 +195,7 @@ export class CommonAccessToken {
       const plaintext = cbor.encode(this.payload).toString('hex');
       this.data = await cose.mac.create(headers, plaintext, recipient);
     }
+    this.kid = key.kid;
   }
 
   public async parse(
@@ -216,6 +218,7 @@ export class CommonAccessToken {
       const buf = await cose.mac.read(token, key.k);
       this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
     }
+    this.kid = key.kid;
   }
 
   public async sign(key: CWTSigningKey, alg: string): Promise<void> {
@@ -315,7 +318,7 @@ export class CommonAccessToken {
         const now = Math.floor(Date.now() / 1000);
         let lowThreshold = exp - 1 * 60;
         if (renewal.deadline !== undefined) {
-          lowThreshold = exp - renewal.deadline * 60;
+          lowThreshold = exp - renewal.deadline;
         }
         if (now >= lowThreshold && now < exp) {
           return true;
@@ -353,6 +356,10 @@ export class CommonAccessToken {
 
   get base64() {
     return this.data?.toString('base64');
+  }
+
+  get keyId() {
+    return this.kid;
   }
 }
 

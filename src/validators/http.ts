@@ -1,4 +1,4 @@
-import { IncomingMessage } from 'node:http';
+import { IncomingMessage, OutgoingMessage } from 'node:http';
 import { CAT } from '..';
 import {
   InvalidAudienceError,
@@ -17,6 +17,8 @@ interface HttpValidatorKey {
 
 export interface HttpValidatorOptions {
   tokenMandatory?: boolean;
+  autoRenewEnabled?: boolean;
+  alg?: string;
   keys: HttpValidatorKey[];
   issuer: string;
   audience?: string[];
@@ -67,6 +69,7 @@ export class HttpValidator {
     });
     this.opts = opts;
     this.opts.tokenMandatory = opts.tokenMandatory ?? true;
+    this.opts.autoRenewEnabled = opts.autoRenewEnabled ?? true;
   }
 
   public async validateCloudFrontRequest(
@@ -93,7 +96,8 @@ export class HttpValidator {
   }
 
   public async validateHttpRequest(
-    request: IncomingMessage
+    request: IncomingMessage,
+    response?: OutgoingMessage
   ): Promise<HttpResponse> {
     const validator = new CAT({
       keys: this.keys
@@ -106,11 +110,18 @@ export class HttpValidator {
     }
 
     let cat;
+    const headerName = 'cta-common-access-token';
+    let catrType;
+    let token;
+
     // Check for token in headers first
-    if (request.headers['cta-common-access-token']) {
-      const token = Array.isArray(request.headers['cta-common-access-token'])
-        ? request.headers['cta-common-access-token'][0]
-        : request.headers['cta-common-access-token'];
+    if (request.headers[headerName]) {
+      token = Array.isArray(request.headers[headerName])
+        ? request.headers[headerName][0]
+        : request.headers[headerName];
+      catrType = 'header';
+    }
+    if (token) {
       try {
         const result = await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
@@ -119,6 +130,45 @@ export class HttpValidator {
         });
         cat = result.cat;
         if (!result.error) {
+          // CAT is acceptable
+          if (
+            cat &&
+            cat?.shouldRenew &&
+            this.opts.autoRenewEnabled &&
+            response &&
+            cat.keyId
+          ) {
+            // Renew token
+            const renewedToken = await validator.renewToken(cat, {
+              type: 'mac',
+              issuer: this.opts.issuer,
+              kid: cat.keyId,
+              alg: this.opts.alg || 'HS256'
+            });
+            const catr = cat.claims.catr as any;
+            if (
+              catr.type === 'header' ||
+              (catr.type === 'automatic' && catrType === 'header')
+            ) {
+              response.setHeader(
+                catr['header-name'] || headerName,
+                renewedToken +
+                  (catr['header-params'] ? `;${catr['header-params']}` : '')
+              );
+            } else if (
+              catr.type === 'cookie' ||
+              (catr.type === 'automatic' && catrType === 'cookie')
+            ) {
+              const cookieName =
+                catr['cookie-name'] || 'cta-common-access-token';
+              response.setHeader(
+                'Set-Cookie',
+                `${cookieName}=${renewedToken}${
+                  catr['cookie-params'] ? '; ' + catr['cookie-params'] : ''
+                }`
+              );
+            }
+          }
           return { status: 200, claims: cat?.claims };
         } else {
           return {

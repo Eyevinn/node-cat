@@ -16,7 +16,7 @@ const httpValidator = new HttpValidator({
 });
 
 const server = http.createServer(async (req, res) => {
-  const result = await httpValidator.validateHttpRequest(req, 'Symmetric256');
+  const result = await httpValidator.validateHttpRequest(req, res);
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });
