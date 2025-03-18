@@ -8,6 +8,7 @@ import {
   UriNotAllowedError
 } from '../errors';
 import { CloudFrontRequest } from 'aws-lambda';
+import { CommonAccessTokenDict } from '../cat';
 
 interface HttpValidatorKey {
   kid: string;
@@ -24,6 +25,7 @@ export interface HttpValidatorOptions {
 export interface HttpResponse {
   status: number;
   message?: string;
+  claims?: CommonAccessTokenDict;
 }
 
 export class NoTokenFoundError extends Error {
@@ -53,7 +55,7 @@ export class NoTokenFoundError extends Error {
  *    request,
  *    'Symmetric256'
  *  );
- *  // { status: 200, message: 'info' }
+ *  // { status: 200, message: 'info', claims: { iss: 'eyevinn' } }
  */
 export class HttpValidator {
   private keys: { [key: string]: Buffer } = {};
@@ -109,12 +111,12 @@ export class HttpValidator {
         ? request.headers['cta-common-access-token'][0]
         : request.headers['cta-common-access-token'];
       try {
-        await validator.validate(token, 'mac', {
+        const cat = await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
           audience: this.opts.audience,
           url
         });
-        return { status: 200 };
+        return { status: 200, claims: cat?.claims };
       } catch (err) {
         if (
           err instanceof InvalidIssuerError ||
