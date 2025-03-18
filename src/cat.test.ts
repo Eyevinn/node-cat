@@ -1,4 +1,5 @@
 import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
+import { CommonAccessTokenRenewal } from './catr';
 
 describe('CAT', () => {
   test('can create a CAT object and return claims as JSON', () => {
@@ -126,6 +127,20 @@ describe('CAT', () => {
       nbf: 1443944944,
       iat: 1443944944,
       cti: '0b71'
+    });
+  });
+
+  test('can provide information about renewal mechanism', async () => {
+    const cat = new CommonAccessToken({
+      iss: 'eyevinn',
+      catr: CommonAccessTokenRenewal.fromDict({
+        type: 'header',
+        'header-name': 'cta-common-access-token'
+      }).payload
+    });
+    expect(cat.claims.catr).toEqual({
+      type: 'header',
+      'header-name': 'cta-common-access-token'
     });
   });
 });

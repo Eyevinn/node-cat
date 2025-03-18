@@ -10,6 +10,7 @@ import {
 } from './errors';
 import { CatValidationOptions } from '.';
 import { CommonAccessTokenUri } from './catu';
+import { CommonAccessTokenRenewal } from './catr';
 
 const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -281,6 +282,10 @@ export class CommonAccessToken {
       const key = labelsToClaim[param] ? labelsToClaim[param] : param;
       if (key === 'catu') {
         result[key] = CommonAccessTokenUri.fromMap(
+          value as Map<number, any>
+        ).toDict();
+      } else if (key === 'catr') {
+        result[key] = CommonAccessTokenRenewal.fromMap(
           value as Map<number, any>
         ).toDict();
       } else {
