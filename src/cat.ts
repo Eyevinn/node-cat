@@ -320,6 +320,7 @@ export class CommonAccessToken {
         if (renewal.deadline !== undefined) {
           lowThreshold = exp - renewal.deadline;
         }
+        //console.log(`${now} >= ${lowThreshold} && ${now} < ${exp}`);
         if (now >= lowThreshold && now < exp) {
           return true;
         }

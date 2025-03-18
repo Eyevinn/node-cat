@@ -313,10 +313,14 @@ describe('HTTP Request CAT Validator', () => {
       }
     });
   });
+});
 
-  test('can autorenew when autorenew is enabled', async () => {
+describe('HTTP Request CAT Validator with auto renew', () => {
+  let generator: CAT;
+  let base64encoded: string | undefined;
+  beforeEach(async () => {
     // Prepare a token that is about to expire
-    const generator = new CAT({
+    generator = new CAT({
       keys: {
         Symmetric256: Buffer.from(
           '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
@@ -327,13 +331,15 @@ describe('HTTP Request CAT Validator', () => {
     });
 
     const now = Math.floor(Date.now() / 1000);
-    const base64encoded = await generator.generate(
+    base64encoded = await generator.generate(
       {
         iss: 'eyevinn',
         exp: now + 60,
         catr: CommonAccessTokenRenewal.fromDict({
-          type: 'header',
+          type: 'automatic',
           'header-name': 'cta-common-access-token',
+          'cookie-name': 'cta-common-access-token',
+          code: 301,
           expadd: 120,
           deadline: 60
         }).payload
@@ -345,7 +351,9 @@ describe('HTTP Request CAT Validator', () => {
         generateCwtId: true
       }
     );
+  });
 
+  test('can autorenew when autorenew is enabled', async () => {
     // Validate and auto renew
     const httpValidator = new HttpValidator({
       keys: [
@@ -390,24 +398,15 @@ describe('HTTP Request CAT Validator', () => {
   });
 
   test('can autorenew when autorenew is enabled and only when token is about to expire', async () => {
-    // Prepare a token that is not about to expire
-    const generator = new CAT({
-      keys: {
-        Symmetric256: Buffer.from(
-          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
-          'hex'
-        )
-      },
-      expectCwtTag: true
-    });
-    const now = Math.floor(Date.now() / 1000);
-    const base64encoded = await generator.generate(
+    base64encoded = await generator.generate(
       {
         iss: 'eyevinn',
-        exp: now + 65,
+        exp: Math.floor(Date.now() / 1000) + 120,
         catr: CommonAccessTokenRenewal.fromDict({
-          type: 'header',
+          type: 'automatic',
           'header-name': 'cta-common-access-token',
+          'cookie-name': 'cta-common-access-token',
+          code: 302,
           expadd: 120,
           deadline: 60
         }).payload
@@ -442,5 +441,32 @@ describe('HTTP Request CAT Validator', () => {
     const result = await httpValidator.validateHttpRequest(request, response);
     expect(result.status).toBe(200);
     expect(response.getHeader('cta-common-access-token')).not.toBeDefined();
+  });
+
+  test.skip('can handle autorenew of type redirect', async () => {
+    // Validate auto renew
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        host: 'example.com'
+      },
+      url: '/index.html?cat=' + base64encoded
+    });
+    console.log(request.url);
+    const response = createResponse();
+    const result = await httpValidator.validateHttpRequest(request, response);
+    expect(response.getHeader('Location')).toBeDefined();
   });
 });

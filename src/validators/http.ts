@@ -18,6 +18,7 @@ interface HttpValidatorKey {
 export interface HttpValidatorOptions {
   tokenMandatory?: boolean;
   autoRenewEnabled?: boolean;
+  tokenUriParam?: string;
   alg?: string;
   keys: HttpValidatorKey[];
   issuer: string;
@@ -62,6 +63,7 @@ export class NoTokenFoundError extends Error {
 export class HttpValidator {
   private keys: { [key: string]: Buffer } = {};
   private opts: HttpValidatorOptions;
+  private tokenUriParam: string;
 
   constructor(opts: HttpValidatorOptions) {
     opts.keys.forEach((k: HttpValidatorKey) => {
@@ -70,6 +72,7 @@ export class HttpValidator {
     this.opts = opts;
     this.opts.tokenMandatory = opts.tokenMandatory ?? true;
     this.opts.autoRenewEnabled = opts.autoRenewEnabled ?? true;
+    this.tokenUriParam = opts.tokenUriParam ?? 'cat';
   }
 
   public async validateCloudFrontRequest(
@@ -120,6 +123,9 @@ export class HttpValidator {
         ? request.headers[headerName][0]
         : request.headers[headerName];
       catrType = 'header';
+    } else if (url && url.searchParams.has(this.tokenUriParam)) {
+      token = url.searchParams.get(this.tokenUriParam);
+      catrType = 'query';
     }
     if (token) {
       try {
@@ -167,6 +173,16 @@ export class HttpValidator {
                   catr['cookie-params'] ? '; ' + catr['cookie-params'] : ''
                 }`
               );
+            } else if (
+              catr.type === 'redirect' ||
+              (catr.type === 'automatic' && catrType === 'query')
+            ) {
+              if (url) {
+                const redirectUrl = url;
+                redirectUrl.searchParams.delete(this.tokenUriParam);
+                redirectUrl.searchParams.set(this.tokenUriParam, renewedToken);
+                response.setHeader('Location', redirectUrl.toString());
+              }
             }
           }
           return { status: 200, claims: cat?.claims };
