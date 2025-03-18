@@ -133,6 +133,30 @@ function updateMapFromClaims(
   return map;
 }
 
+function updateMapFromDict(
+  dict: CommonAccessTokenDict
+): CommonAccessTokenClaims {
+  const claims: CommonAccessTokenClaims = {};
+  for (const param in dict) {
+    const key = claimsToLabels[param];
+    if (param === 'catu') {
+      claims[key] = CommonAccessTokenUri.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else if (param === 'catr') {
+      claims[key] = CommonAccessTokenRenewal.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else {
+      const value = claimTransform[param]
+        ? claimTransform[param](dict[param] as string)
+        : dict[param];
+      claims[key] = value as string | number;
+    }
+  }
+  return claims;
+}
+
 export class CommonAccessToken {
   private payload: Map<number, CommonAccessTokenValue>;
   private data?: Buffer;
@@ -351,6 +375,11 @@ export class CommonAccessTokenFactory {
     const token = Buffer.from(base64encoded, 'base64');
     const cat = new CommonAccessToken({});
     await cat.parse(token, key, { expectCwtTag });
+    return cat;
+  }
+
+  public static fromDict(claims: CommonAccessTokenDict) {
+    const cat = new CommonAccessToken(updateMapFromDict(claims));
     return cat;
   }
 }

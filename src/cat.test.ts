@@ -144,6 +144,35 @@ describe('CAT', () => {
     });
   });
 
+  test('can create a CAT object from a dict', async () => {
+    const cat = CommonAccessTokenFactory.fromDict({
+      iss: 'eyevinn',
+      sub: 'jonas',
+      aud: 'coap://light.example.com',
+      exp: 1444064944,
+      nbf: 1443944944,
+      iat: 1443944944,
+      cti: '0b71',
+      catr: {
+        type: 'header',
+        'header-name': 'cta-common-access-token'
+      }
+    });
+    expect(cat.claims).toEqual({
+      iss: 'eyevinn',
+      sub: 'jonas',
+      aud: 'coap://light.example.com',
+      exp: 1444064944,
+      nbf: 1443944944,
+      iat: 1443944944,
+      cti: '0b71',
+      catr: {
+        type: 'header',
+        'header-name': 'cta-common-access-token'
+      }
+    });
+  });
+
   test('can determine whether the token should be renewed', async () => {
     const now = Math.floor(Date.now() / 1000);
     const cat = new CommonAccessToken({
@@ -151,7 +180,7 @@ describe('CAT', () => {
       exp: now + 30,
       catr: CommonAccessTokenRenewal.fromDict({
         type: 'automatic',
-        extadd: 60
+        expadd: 60
       }).payload
     });
     expect(cat.shouldRenew).toBe(true);
@@ -160,7 +189,7 @@ describe('CAT', () => {
       exp: now + 100,
       catr: CommonAccessTokenRenewal.fromDict({
         type: 'automatic',
-        extadd: 60
+        expadd: 60
       }).payload
     });
     expect(cat2.shouldRenew).toBe(false);
@@ -169,7 +198,7 @@ describe('CAT', () => {
       exp: now + 100,
       catr: CommonAccessTokenRenewal.fromDict({
         type: 'automatic',
-        extadd: 60,
+        expadd: 60,
         deadline: 105
       }).payload
     });
