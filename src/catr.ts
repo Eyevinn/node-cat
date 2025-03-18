@@ -54,7 +54,10 @@ export class CommonAccessTokenRenewal {
   public static fromDict(dict: { [key: string]: any }) {
     const catr = new CommonAccessTokenRenewal();
     for (const catrPart in dict) {
-      catr.catrMap.set(catrPartToLabel[catrPart], dict[catrPart]);
+      catr.catrMap.set(
+        catrPartToLabel[catrPart],
+        catrRenewalTypeToLabel[dict[catrPart]] || dict[catrPart]
+      );
     }
     return catr;
   }
@@ -68,7 +71,11 @@ export class CommonAccessTokenRenewal {
   toDict() {
     const result: { [key: string]: any } = {};
     for (const [key, value] of this.catrMap.entries()) {
-      result[labelsToCatrPart[key]] = value;
+      if (labelsToCatrPart[key] === 'type') {
+        result[labelsToCatrPart[key]] = labelsToCatrRenewalType[value as number];
+      } else {
+        result[labelsToCatrPart[key]] = value;
+      }
     }
     return result;
   }
