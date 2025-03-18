@@ -46,6 +46,7 @@ This is a Node library for generating and validating Common Access Tokens (CTA-5
 | Geohash (`geohash`)                                       | No       |
 | Common Access Token Altitude (`catgeoalt`)                | No       |
 | Common Access Token TLS Public Key (`cattpk`)             | No       |
+| Common ACcess Token Renewal (`catr`) claim                | Yes      |
 
 ## Requirements
 
