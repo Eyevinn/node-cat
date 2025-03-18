@@ -7,7 +7,11 @@ import {
   TokenExpiredError,
   UriNotAllowedError
 } from '../errors';
-import { CloudFrontRequest } from 'aws-lambda';
+import {
+  CloudFrontHeaders,
+  CloudFrontRequest,
+  CloudFrontResponse
+} from 'aws-lambda';
 import { CommonAccessTokenDict } from '../cat';
 
 interface HttpValidatorKey {
@@ -77,12 +81,13 @@ export class HttpValidator {
 
   public async validateCloudFrontRequest(
     cfRequest: CloudFrontRequest
-  ): Promise<HttpResponse> {
+  ): Promise<HttpResponse & { cfResponse: CloudFrontResponse }> {
     const requestLike: Pick<IncomingMessage, 'headers'> &
       Pick<IncomingMessage, 'url'> = {
       headers: {},
       url: ''
     };
+    const response = new OutgoingMessage();
 
     if (cfRequest.headers) {
       Object.entries(cfRequest.headers).forEach(([name, header]) => {
@@ -95,7 +100,20 @@ export class HttpValidator {
     }
     requestLike.url = cfRequest.uri;
 
-    return await this.validateHttpRequest(requestLike as IncomingMessage);
+    const result = await this.validateHttpRequest(
+      requestLike as IncomingMessage,
+      response
+    );
+    const cfHeaders: CloudFrontHeaders = {};
+    Object.entries(response.getHeaders()).forEach(([name, value]) => {
+      cfHeaders[name] = [{ key: name, value: value as string }];
+    });
+    const cfResponse: CloudFrontResponse = {
+      status: result.status.toString(),
+      statusDescription: result.message || 'ok',
+      headers: cfHeaders
+    };
+    return { ...result, cfResponse: cfResponse };
   }
 
   public async validateHttpRequest(

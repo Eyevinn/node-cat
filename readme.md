@@ -142,8 +142,9 @@ export const handler = async (
   const request = event.Records[0].cf.request;
   const response = event.Records[0].cf.response;
   const result = await httpValidator.validateCloudFrontRequest(request);
-  response.status = result.status;
-  response.statusDescription = result.message;
+  // If renewed new token is found here given catr type is "header"
+  console.log(result.cfResponse.headers['cta-common-access-token']);
+  response = result.cfResponse;
   if (result.claims) {
     console.log(result.claims);
   }

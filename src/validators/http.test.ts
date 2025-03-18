@@ -2,6 +2,7 @@ import { createRequest, createResponse } from 'node-mocks-http';
 import { HttpValidator, NoTokenFoundError } from './http';
 import { CAT } from '..';
 import { CommonAccessTokenRenewal } from '../catr';
+import { CloudFrontResponse } from 'aws-lambda';
 
 describe('HTTP Request CAT Validator', () => {
   test('fail to validate token in CTA-Common-Access-Token header with wrong signature', async () => {
@@ -468,5 +469,99 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     const response = createResponse();
     const result = await httpValidator.validateHttpRequest(request, response);
     expect(response.getHeader('Location')).toBeDefined();
+  });
+
+  test('cloudfront request with autorenew', async () => {
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateCloudFrontRequest({
+      clientIp: 'dummy',
+      method: 'GET',
+      uri: '/content/path/file.m3u8',
+      querystring: '',
+      headers: {
+        'cta-common-access-token': [
+          {
+            value: base64encoded!
+          }
+        ],
+        host: [
+          {
+            key: 'Host',
+            value: 'example.com'
+          }
+        ]
+      }
+    });
+    expect(result.status).toBe(200);
+    expect(result.cfResponse.headers['cta-common-access-token']).toBeDefined();
+  });
+
+  test('cloudfront request with autorenew where token has not expired', async () => {
+    base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        exp: Math.floor(Date.now() / 1000) + 120,
+        catr: CommonAccessTokenRenewal.fromDict({
+          type: 'automatic',
+          'header-name': 'cta-common-access-token',
+          'cookie-name': 'cta-common-access-token',
+          code: 302,
+          expadd: 120,
+          deadline: 60
+        }).payload
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateCloudFrontRequest({
+      clientIp: 'dummy',
+      method: 'GET',
+      uri: '/content/path/file.m3u8',
+      querystring: '',
+      headers: {
+        'cta-common-access-token': [
+          {
+            value: base64encoded!
+          }
+        ],
+        host: [
+          {
+            key: 'Host',
+            value: 'example.com'
+          }
+        ]
+      }
+    });
+    expect(result.status).toBe(200);
+    expect(
+      result.cfResponse.headers['cta-common-access-token']
+    ).not.toBeDefined();
   });
 });
