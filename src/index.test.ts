@@ -305,4 +305,42 @@ describe('CAT claims', () => {
       })
     ).rejects.toThrow(UriNotAllowedError);
   });
+
+  test('can provide CWT Id claim', async () => {
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        cti: 'a47019af6305d3652a918ae356cc2ca2'
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    const cat = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(cat).toBeDefined();
+    expect(cat!.claims.cti).toEqual('a47019af6305d3652a918ae356cc2ca2');
+  });
+
+  test('can auto generate a CWT Id claim', async () => {
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn'
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const cat = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(cat).toBeDefined();
+    expect(cat!.claims.cti).toBeDefined();
+  });
 });
