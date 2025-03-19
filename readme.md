@@ -348,7 +348,7 @@ const httpValidator = new HttpValidator({
     }
   ],
   issuer: 'eyevinn',
-  store: new MyLogger(),
+  logger: new MyLogger(),
   reuseDetection
 });
 ...
