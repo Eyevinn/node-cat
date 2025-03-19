@@ -209,8 +209,8 @@ export class CAT {
     }
     if (cat) {
       try {
-        const valid = await cat.isValid(opts);
-        if (valid) {
+        const acceptable = await cat.isAcceptable(opts);
+        if (acceptable) {
           return { cat, error: undefined };
         }
       } catch (err) {

@@ -298,9 +298,9 @@ export class CommonAccessToken {
   }
 
   /**
-   * Validate all claims in the token
+   * Token is valid and acceptable
    */
-  public async isValid(opts: CatValidationOptions): Promise<boolean> {
+  public async isAcceptable(opts: CatValidationOptions): Promise<boolean> {
     this.validateTypes();
 
     if (
