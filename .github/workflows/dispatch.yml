@@ -2,6 +2,11 @@ name: Manually update and publish documentation
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build-docs:
     runs-on: ubuntu-latest
