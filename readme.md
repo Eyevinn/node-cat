@@ -68,7 +68,7 @@ Features:
 ### Validate CTA Common Access Token in HTTP incoming message
 
 ```javascript
-import { HttpValidator } from '@eyevinn/cat';
+import { HttpValidator, MemoryCTIStore } from '@eyevinn/cat';
 
 const httpValidator = new HttpValidator({
   keys: [
@@ -83,7 +83,8 @@ const httpValidator = new HttpValidator({
   autoRenewEnabled: true // Token renewal enabled. Optional (default: true)
   tokenMandatory: true // Optional (default: true)
   issuer: 'eyevinn',
-  audience: ['one', 'two'] // Optional
+  audience: ['one', 'two'], // Optional
+  store: new MemoryCTIStore() // Where to store token usage count. Optional (default: none)
 });
 
 const server = http.createServer((req, res) => {
@@ -92,6 +93,7 @@ const server = http.createServer((req, res) => {
   );
   console.log(result.claims); // Claims
   console.log(res.getHeaders('cta-common-access-token')); // Renewed token
+  console.log(result.count); // Number of times the token has been used
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });
@@ -152,6 +154,7 @@ export const handler = async (
   const result = await httpValidator.validateCloudFrontRequest(request);
   // If renewed new token is found here given catr type is "header"
   console.log(result.cfResponse.headers['cta-common-access-token']);
+  console.log(result.count); // Number of times the token has been used (undefined if no store is enabled)
   response = result.cfResponse;
   if (result.claims) {
     console.log(result.claims);
