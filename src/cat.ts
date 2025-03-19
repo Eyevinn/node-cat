@@ -84,6 +84,9 @@ const claimTypeValidators: { [key: string]: (value: string) => boolean } = {
 
 const CWT_TAG = 61;
 
+/**
+ * Common Access Token Claims
+ */
 export type CommonAccessTokenClaims = {
   [key: string]: string | number | Map<number, any>;
 };
@@ -96,14 +99,34 @@ export type CommonAccessTokenValue =
   | Buffer
   | Map<number, any>;
 
+/**
+ * CWT Encryption Key
+ */
 export interface CWTEncryptionKey {
+  /**
+   * Key
+   */
   k: Buffer;
+  /**
+   * Key ID
+   */
   kid: string;
 }
+
+/**
+ * CWT Decryption Key
+ */
 export interface CWTDecryptionKey {
+  /**
+   * Key
+   */
   k: Buffer;
+  /**
+   * Key ID
+   */
   kid: string;
 }
+
 export interface CWTSigningKey {
   d: Buffer;
   kid: string;
@@ -157,6 +180,9 @@ function updateMapFromDict(
   return claims;
 }
 
+/**
+ * Common Access Token
+ */
 export class CommonAccessToken {
   private payload: Map<number, CommonAccessTokenValue>;
   private data?: Buffer;
@@ -166,9 +192,21 @@ export class CommonAccessToken {
     this.payload = updateMapFromClaims(claims);
   }
 
+  /**
+   * Create a CWT CAT token
+   */
   public async mac(
+    /**
+     * Encryption key
+     */
     key: CWTEncryptionKey,
+    /**
+     * Algorithm to use
+     */
     alg: string,
+    /**
+     * Options
+     */
     opts?: {
       addCwtTag: boolean;
     }
@@ -198,6 +236,9 @@ export class CommonAccessToken {
     this.kid = key.kid;
   }
 
+  /**
+   * Parse a CWT CAT token
+   */
   public async parse(
     token: Buffer,
     key: CWTDecryptionKey,
@@ -253,6 +294,9 @@ export class CommonAccessToken {
     }
   }
 
+  /**
+   * Validate all claims in the token
+   */
   public async isValid(opts: CatValidationOptions): Promise<boolean> {
     this.validateTypes();
 
@@ -372,6 +416,9 @@ export class CommonAccessToken {
   }
 }
 
+/**
+ * Common Access Token Factory
+ */
 export class CommonAccessTokenFactory {
   public static async fromSignedToken(
     base64encoded: string,

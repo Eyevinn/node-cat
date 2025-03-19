@@ -18,19 +18,52 @@ export { RedisCTIStore } from './stores/redis';
 export { ITokenLogger } from './loggers/interface';
 export { ConsoleLogger } from './loggers/console';
 
+/**
+ * Types of CAT validation
+ */
 export type CatValidationTypes = 'mac' | 'sign' | 'none';
 
+/**
+ * Options for the CAT validation
+ */
 export interface CatValidationOptions {
+  /**
+   * Algorithm to use for validation
+   */
   alg?: string;
+  /**
+   * Expected issuer of token
+   */
   issuer: string;
+  /**
+   * Allowed audiences for token
+   */
   audience?: string[];
+  /**
+   * Request URL associated with the token
+   */
   url?: URL;
 }
 
+/**
+ * Options for generating a CAT token
+ */
 export interface CatGenerateOptions {
+  /**
+   * Type of validation mechanism to use for the token
+   */
   type: CatValidationTypes;
+  /**
+   * Algorithm to use for token generation
+   */
   alg: string;
+  /**
+   * Key ID to use for token generation
+   */
   kid: string;
+  /**
+   * Whether to generate a CWT ID for the token
+   */
   generateCwtId?: boolean;
 }
 
@@ -41,16 +74,22 @@ export interface CatRenewOptions {
   issuer: string;
 }
 
+/**
+ * Result of the CAT validation
+ */
 export interface CatValidationResult {
+  /**
+   * The CAT object
+   */
   cat?: CommonAccessToken;
+  /**
+   * Error if any
+   */
   error?: Error;
 }
 
 /**
  * Options for the CAT object
- *
- * @param {Object} keys - Key object
- * @param {boolean} expectCwtTag - Expect CWT tag in token
  *
  * @example
  * const opts = {
@@ -61,7 +100,14 @@ export interface CatValidationResult {
  * };
  */
 export interface CatOptions {
+  /**
+   * Key ID to key mapping
+   */
   keys: { [keyid: string]: Buffer };
+
+  /**
+   * Whether there should be a CWT tag in the token
+   */
   expectCwtTag?: boolean;
 }
 
@@ -97,9 +143,32 @@ export class CAT {
     this.expectCwtTag = opts.expectCwtTag || false;
   }
 
+  /**
+   * Validate a CAT token
+   * @async
+   *
+   * @example
+   * try {
+   *   await validator.validate(base64encoded, 'mac', {
+   *     kid: 'Symmetric256',
+   *     issuer: 'coap://as.example.com'
+   *   });
+   * } catch (e) {
+   *   // Not valid, handle error
+   * }
+   */
   public async validate(
+    /**
+     * The token to validate (base64 encoded)
+     */
     token: string,
+    /**
+     * Type of validation to perform
+     */
     type: CatValidationTypes,
+    /**
+     * Options for the validation
+     */
     opts: CatValidationOptions
   ): Promise<CatValidationResult> {
     const tokenWithoutPadding = token.trim();
@@ -174,8 +243,41 @@ export class CAT {
     }
   }
 
+  /**
+   * Generate a CAT token from a JSON object
+   *
+   * @example
+   * const base64encoded = await generator.generateFromJson(
+   *   {
+   *     iss: 'coap://as.example.com',
+   *     sub: 'jonas',
+   *     aud: 'coap://light.example.com',
+   *     exp: 1444064944,
+   *     nbf: 1443944944,
+   *     iat: 1443944944,
+   *     catr: {
+   *       type: 'header',
+   *       'header-name': 'cta-common-access-token',
+   *       expadd: 120,
+   *       deadline: 60
+   *     }
+   *   },
+   *   {
+   *     type: 'mac',
+   *     alg: 'HS256',
+   *     kid: 'Symmetric256',
+   *     generateCwtId: true // automatically generate a random CWT Id (cti) claim (default: false)
+   *   }
+   * );
+   */
   public async generateFromJson(
+    /**
+     * The claims to use for the token
+     */
     dict: CommonAccessTokenDict,
+    /**
+     * Options for the token generation
+     */
     opts?: CatGenerateOptions
   ) {
     if (opts?.generateCwtId) {
@@ -197,8 +299,17 @@ export class CAT {
     }
   }
 
+  /**
+   * Renew a CAT token
+   */
   public async renewToken(
+    /**
+     * The token to renew
+     */
     cat: CommonAccessToken,
+    /**
+     * Options for the renewal
+     */
     opts: CatRenewOptions
   ): Promise<string> {
     const newClaims = cat.claims;
