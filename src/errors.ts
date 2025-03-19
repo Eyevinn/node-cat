@@ -80,3 +80,21 @@ export class RenewalClaimError extends Error {
     super(reason);
   }
 }
+
+/**
+ * Error thrown when trying to replay a token that is not allowed to be replayed
+ */
+export class ReplayNotAllowedError extends Error {
+  constructor(count: number) {
+    super(`Replay not allowed: ${count}`);
+  }
+}
+
+/**
+ * Error thrown when a token is detected for invalid reuse
+ */
+export class InvalidReuseDetected extends Error {
+  constructor() {
+    super(`Invalid reuse detected`);
+  }
+}

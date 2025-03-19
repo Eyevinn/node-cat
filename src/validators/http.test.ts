@@ -1,8 +1,13 @@
 import { createRequest, createResponse } from 'node-mocks-http';
 import { HttpValidator, NoTokenFoundError } from './http';
-import { CAT, MemoryCTIStore } from '..';
+import {
+  CAT,
+  CommonAccessToken,
+  ICTIStore,
+  ITokenLogger,
+  MemoryCTIStore
+} from '..';
 import { CommonAccessTokenRenewal } from '../catr';
-import { CloudFrontResponse } from 'aws-lambda';
 
 describe('HTTP Request CAT Validator', () => {
   test('fail to validate token in CTA-Common-Access-Token header with wrong signature', async () => {
@@ -626,6 +631,7 @@ describe('HTTP Request CAT Validator with store', () => {
     expect(result.claims!.cti).toBe('0b71');
     expect(result.count).toBe(1);
     const result2 = await httpValidator.validateHttpRequest(request, response);
+    expect(result2.status).toBe(200);
     expect(result2.count).toBe(2);
 
     const cfResult = await httpValidator.validateCloudFrontRequest({
@@ -694,5 +700,137 @@ describe('HTTP Request CAT Validator with store', () => {
     const result = await httpValidator.validateHttpRequest(request, response);
     expect(result.claims!.cti).toBe('0b71');
     expect(result.count).toBeUndefined();
+  });
+
+  test('pass if a token has a claim that allows replay and it has been used multiple times', async () => {
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        catreplay: 0
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn',
+      store: new MemoryCTIStore()
+    });
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(200);
+    const result2 = await httpValidator.validateHttpRequest(request);
+    expect(result2.status).toBe(200);
+  });
+
+  test('fail if a token has a claim that does not allow replay and it has been used multiple times', async () => {
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        catreplay: 1
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn',
+      store: new MemoryCTIStore()
+    });
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(200);
+    const result2 = await httpValidator.validateHttpRequest(request);
+    expect(result2.status).toBe(401);
+  });
+
+  test('can provide a simple reuse detection algorithm', async () => {
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        catreplay: 2
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+
+    const simpleReuseDetection = async (
+      cat: CommonAccessToken,
+      store?: ICTIStore,
+      logger?: ITokenLogger
+    ) => {
+      if (store) {
+        const count = await store.getTokenCount(cat);
+        // Consider reuse if same token has been used more than 2 times
+        // (this is a very naive example)
+        return count > 2;
+      }
+      return true;
+    };
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn',
+      store: new MemoryCTIStore(),
+      reuseDetection: simpleReuseDetection
+    });
+
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(200);
+    const result2 = await httpValidator.validateHttpRequest(request);
+    expect(result2.status).toBe(200);
+    const result3 = await httpValidator.validateHttpRequest(request);
+    expect(result3.status).toBe(401);
   });
 });
