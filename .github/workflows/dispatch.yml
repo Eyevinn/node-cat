@@ -1,0 +1,35 @@
+name: Manually update and publish documentation
+
+on: workflow_dispatch
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org/
+      - run: |
+          npm install
+          npm run build:docs
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+  deploy-docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-docs.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-docs
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
