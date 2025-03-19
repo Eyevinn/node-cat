@@ -1,6 +1,6 @@
 import http from 'node:http';
 
-import { HttpValidator } from '../src';
+import { HttpValidator, MemoryCTIStore } from '../src';
 
 const httpValidator = new HttpValidator({
   keys: [
@@ -12,7 +12,8 @@ const httpValidator = new HttpValidator({
       )
     }
   ],
-  issuer: 'eyevinn'
+  issuer: 'eyevinn',
+  store: new MemoryCTIStore()
 });
 
 const server = http.createServer(async (req, res) => {

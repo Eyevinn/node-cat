@@ -1,6 +1,6 @@
 import { createRequest, createResponse } from 'node-mocks-http';
 import { HttpValidator, NoTokenFoundError } from './http';
-import { CAT } from '..';
+import { CAT, MemoryCTIStore } from '..';
 import { CommonAccessTokenRenewal } from '../catr';
 import { CloudFrontResponse } from 'aws-lambda';
 
@@ -465,7 +465,6 @@ describe('HTTP Request CAT Validator with auto renew', () => {
       },
       url: '/index.html?cat=' + base64encoded
     });
-    console.log(request.url);
     const response = createResponse();
     const result = await httpValidator.validateHttpRequest(request, response);
     expect(response.getHeader('Location')).toBeDefined();
@@ -563,5 +562,70 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     expect(
       result.cfResponse.headers['cta-common-access-token']
     ).not.toBeDefined();
+  });
+});
+
+describe('HTTP Request CAT Validator with store', () => {
+  let generator: CAT;
+  beforeEach(() => {
+    generator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+  });
+
+  test('can validate token and store used token and increase count', async () => {
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        exp: Math.floor(Date.now() / 1000) + 120,
+        cti: '0b71',
+        catr: CommonAccessTokenRenewal.fromDict({
+          type: 'automatic',
+          'header-name': 'cta-common-access-token',
+          'cookie-name': 'cta-common-access-token',
+          code: 302,
+          expadd: 120,
+          deadline: 60
+        }).payload
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+
+    const store = new MemoryCTIStore();
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn',
+      store
+    });
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const response = createResponse();
+    const result = await httpValidator.validateHttpRequest(request, response);
+    expect(result.claims!.cti).toBe('0b71');
+    expect(result.count).toBe(1);
+    const result2 = await httpValidator.validateHttpRequest(request, response);
+    expect(result2.count).toBe(2);
   });
 });

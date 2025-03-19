@@ -4,6 +4,7 @@ import { KeyNotFoundError } from './errors';
 
 export { CommonAccessToken } from './cat';
 export { HttpValidator } from './validators/http';
+export { MemoryCTIStore } from './stores/memory';
 export { CommonAccessTokenRenewal } from './catr';
 export { CommonAccessTokenUri } from './catu';
 

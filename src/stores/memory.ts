@@ -4,7 +4,7 @@ import { CTIStore } from './interface';
 export class MemoryCTIStore implements CTIStore {
   private store: { [key: string]: number } = {};
 
-  async storeToken(token: CommonAccessToken): Promise<void> {
+  async storeToken(token: CommonAccessToken): Promise<number> {
     const cti = token.cti;
     if (cti) {
       if (this.store[cti]) {
@@ -12,7 +12,9 @@ export class MemoryCTIStore implements CTIStore {
       } else {
         this.store[cti] = 1;
       }
+      return this.store[cti];
     }
+    return 0;
   }
 
   async getTokenCount(token: CommonAccessToken): Promise<number> {

@@ -35,6 +35,7 @@ export interface HttpResponse {
   status: number;
   message?: string;
   claims?: CommonAccessTokenDict;
+  count?: number;
 }
 
 export class NoTokenFoundError extends Error {
@@ -159,9 +160,10 @@ export class HttpValidator {
         });
         cat = result.cat;
         if (!result.error) {
+          let count;
           // CAT is acceptable
           if (cat && this.store) {
-            await this.store.storeToken(cat);
+            count = await this.store.storeToken(cat);
           }
           if (
             cat &&
@@ -211,7 +213,7 @@ export class HttpValidator {
               }
             }
           }
-          return { status: 200, claims: cat?.claims };
+          return { status: 200, claims: cat?.claims, count };
         } else {
           return {
             status: 401,
