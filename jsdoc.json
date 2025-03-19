@@ -5,10 +5,22 @@
   "plugins": ["node_modules/better-docs/typescript"],
   "source": {
     "include": ["readme.md", "src"],
-    "includePattern": "\\.(jsx|js|ts|tsx)$",
-    "excludePattern": "(node_modules/|docs)"
+    "includePattern": "\\.(ts)$",
+    "excludePattern": "(node_modules/|docs|lib/)"
   },
   "opts": {
-    "destination": "./docs/"
+    "destination": "./docs/",
+    "recurse": true
+  },
+  "templates": {
+    "default": {
+      "outputSourceFiles": false
+    },
+    "cleverLinks": false,
+    "monospaceLinks": false,
+    "search": true,
+    "better-docs": {
+      "hideGenerator": true
+    }
   }
 }

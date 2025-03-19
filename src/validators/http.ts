@@ -21,22 +21,67 @@ interface HttpValidatorKey {
   key: Buffer;
 }
 
+/**
+ * Options for the HttpValidator
+ */
 export interface HttpValidatorOptions {
+  /**
+   * If token is mandatory to be present in the request
+   */
   tokenMandatory?: boolean;
+  /**
+   * If token should be automatically renewed according to CATR
+   */
   autoRenewEnabled?: boolean;
+  /**
+   * Name of the query parameter to look for token
+   */
   tokenUriParam?: string;
+  /**
+   * Algorithm to use for token validation
+   */
   alg?: string;
+  /**
+   * Keys to use for token validation
+   */
   keys: HttpValidatorKey[];
+  /**
+   * Expected issuer of token
+   */
   issuer: string;
+  /**
+   * Allowed audiences for token
+   */
   audience?: string[];
+  /**
+   * Store for tracking token usage
+   */
   store?: ICTIStore;
+  /**
+   * Logger for logging token usage
+   */
   logger?: ITokenLogger;
 }
 
+/**
+ * Response from the HttpValidator
+ */
 export interface HttpResponse {
+  /**
+   * HTTP status code
+   */
   status: number;
+  /**
+   * Optional message
+   */
   message?: string;
+  /**
+   * Claims from the token
+   */
   claims?: CommonAccessTokenDict;
+  /**
+   * Number of times token has been used
+   */
   count?: number;
 }
 
@@ -89,7 +134,13 @@ export class HttpValidator {
     this.logger = opts.logger;
   }
 
+  /**
+   * Validate a CloudFront request
+   */
   public async validateCloudFrontRequest(
+    /**
+     * CloudFront request
+     */
     cfRequest: CloudFrontRequest
   ): Promise<HttpResponse & { cfResponse: CloudFrontResponse }> {
     const requestLike: Pick<IncomingMessage, 'headers'> &
@@ -126,8 +177,17 @@ export class HttpValidator {
     return { ...result, cfResponse: cfResponse };
   }
 
+  /**
+   * Validate a HTTP request
+   */
   public async validateHttpRequest(
+    /**
+     * HTTP request
+     */
     request: IncomingMessage,
+    /**
+     * HTTP response to set headers on
+     */
     response?: OutgoingMessage
   ): Promise<HttpResponse> {
     const validator = new CAT({

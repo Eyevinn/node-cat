@@ -1,6 +1,9 @@
 import { CommonAccessToken } from '..';
 import { ICTIStore } from './interface';
 
+/**
+ * Memory based store for tracking token usage
+ */
 export class MemoryCTIStore implements ICTIStore {
   private store: { [key: string]: number } = {};
 

@@ -2,6 +2,9 @@ import { Redis } from 'ioredis';
 import { ICTIStore } from './interface';
 import { CommonAccessToken } from '..';
 
+/**
+ * Redis based store for tracking token usage
+ */
 export class RedisCTIStore implements ICTIStore {
   private client: Redis;
 
@@ -9,6 +12,9 @@ export class RedisCTIStore implements ICTIStore {
     this.client = new Redis(redisUrl.toString());
   }
 
+  /**
+   * Store a token in the store and return the number of times the token has been stored
+   */
   async storeToken(token: CommonAccessToken): Promise<number> {
     const cti = token.cti;
     if (cti) {
@@ -18,6 +24,9 @@ export class RedisCTIStore implements ICTIStore {
     return 0;
   }
 
+  /**
+   * Get the number of times a token has been stored
+   */
   async getTokenCount(token: CommonAccessToken): Promise<number> {
     const cti = token.cti;
     if (cti) {
