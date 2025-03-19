@@ -11,6 +11,9 @@ export { ICTIStore } from './stores/interface';
 export { MemoryCTIStore } from './stores/memory';
 export { RedisCTIStore } from './stores/redis';
 
+export { ITokenLogger } from './loggers/interface';
+export { ConsoleLogger } from './loggers/console';
+
 export type CatValidationTypes = 'mac' | 'sign' | 'none';
 
 export interface CatValidationOptions {

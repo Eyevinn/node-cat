@@ -29,6 +29,7 @@ Features:
   - Validation and parsing of tokens
   - Handle automatic renewal of tokens
   - Token usage count using store plugins (see further down for available plugins)
+  - Log how tokens are being used with logging plugins (see further down for available plugins)
 
 ## Claims Validation Support
 
@@ -85,7 +86,8 @@ const httpValidator = new HttpValidator({
   tokenMandatory: true // Optional (default: true)
   issuer: 'eyevinn',
   audience: ['one', 'two'], // Optional
-  store: new RedisCTIStore(new URL(process.env.REDIS_URL || 'redis://localhost:6379')) // Where to store token usage count. Optional (default: none)
+  store: new RedisCTIStore(new URL(process.env.REDIS_URL || 'redis://localhost:6379')), // Where to store token usage count. Optional (default: none)
+  logger: new ConsoleLogger() // Adapter to store all tokens that been successfully validated. Optional (default: none)
 });
 
 const server = http.createServer((req, res) => {
@@ -264,6 +266,39 @@ class MyStore implements ICTIStore {
   async getTokenCount(token: CommonAccessToken): Promise<number> {
     const cti = token.cti;
     // Return current token count for a CTI
+  }
+}
+```
+
+## Token logging plugin
+
+Log how tokens are being used to be able to analyze detect usage anamolies with a token logging plugin. The following logging plugins are provided today.
+
+### Console Logger
+
+This just logs the token to stdout in a JSON format.
+
+```javascript
+const logging = new ConsoleLogging();
+// Will output for example
+// {"cti":"b43c9cef64ca7dc83af8a33f39fc7168","timestamp":1742386792234,"iat":1742386782,"exp":1742386902,"sub":"jonas"}
+// {"cti":"b43c9cef64ca7dc83af8a33f39fc7168","timestamp":1742386799501,"iat":1742386782,"exp":1742386902,"sub":"jonas"}
+```
+
+### Custom Logger
+
+To implement your own logger you implement the interface `ITokenLogger`, for example:
+
+```javascript
+import { ITokenLogger, CommonAccessToken } from '@eyvinn/cat';
+
+// Pseudo code below
+class MyLogger implements ITokenLogger {
+  async logToken(token: CommonAccessToken): Promise<void> {
+    if (!this.db.connected) {
+      await this.db.connect();
+    }
+    this.db.insert(token);
   }
 }
 ```
