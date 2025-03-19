@@ -47,7 +47,7 @@ Features:
 | CWT ID (`cti`)                                            | Yes      |
 | Common Access Token Replay (`catreplay`)                  | Yes      |
 | Common Access Token Probability of Rejection (`catpor`)   | No       |
-| Common Access Token Version (`catv`)                      | No       |
+| Common Access Token Version (`catv`)                      | Yes      |
 | Common Access Token Network IP (`catnip`)                 | No       |
 | Common Access Token URI (`catu`)                          | Yes      |
 | Common Access Token Methods (`catm`)                      | No       |

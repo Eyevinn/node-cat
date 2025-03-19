@@ -44,7 +44,8 @@ describe('CAT', () => {
     expect(result.error).not.toBeDefined();
     expect(result.cat).toBeDefined();
     expect(result.cat!.claims).toEqual({
-      iss: 'coap://as.example.com'
+      iss: 'coap://as.example.com',
+      catv: 1
     });
   });
 
@@ -106,7 +107,8 @@ describe('CAT', () => {
           'exact-match': 'https'
         }
       },
-      exp: expect.any(Number)
+      exp: expect.any(Number),
+      catv: 1
     });
   });
 
