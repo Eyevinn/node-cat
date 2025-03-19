@@ -189,6 +189,9 @@ export class CommonAccessToken {
   private kid?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
+    if (!claims['catv']) {
+      claims['catv'] = 1;
+    }
     this.payload = updateMapFromClaims(claims);
   }
 

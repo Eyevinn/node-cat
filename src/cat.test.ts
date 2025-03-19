@@ -10,7 +10,8 @@ describe('CAT', () => {
       exp: 1444064944,
       nbf: 1443944944,
       iat: 1443944944,
-      cti: '0b71'
+      cti: '0b71',
+      catv: 1
     };
     const cwt = new CommonAccessToken(claims);
     expect(cwt.claims).toEqual(claims);
@@ -20,7 +21,8 @@ describe('CAT', () => {
     const claims = {
       iss: 'coap://jonas.example.com',
       nbf: 1741985961,
-      iat: 1741985961
+      iat: 1741985961,
+      catv: 1
     };
     const cat = new CommonAccessToken(claims);
     const key = {
@@ -169,7 +171,8 @@ describe('CAT', () => {
       catr: {
         type: 'header',
         'header-name': 'cta-common-access-token'
-      }
+      },
+      catv: 1
     });
   });
 
