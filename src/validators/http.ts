@@ -1,9 +1,11 @@
 import { IncomingMessage, OutgoingMessage } from 'node:http';
-import { CAT } from '..';
+import { CAT, CommonAccessToken } from '..';
 import {
   InvalidAudienceError,
   InvalidIssuerError,
+  InvalidReuseDetected,
   KeyNotFoundError,
+  ReplayNotAllowedError,
   TokenExpiredError,
   UriNotAllowedError
 } from '../errors';
@@ -61,6 +63,14 @@ export interface HttpValidatorOptions {
    * Logger for logging token usage
    */
   logger?: ITokenLogger;
+  /**
+   * Callback for reuse detection
+   */
+  reuseDetection?: (
+    cat: CommonAccessToken,
+    store?: ICTIStore,
+    logger?: ITokenLogger
+  ) => Promise<boolean>;
 }
 
 /**
@@ -228,6 +238,22 @@ export class HttpValidator {
           // CAT is acceptable
           if (cat && this.store) {
             count = await this.store.storeToken(cat);
+            if (cat.claims.catreplay !== undefined) {
+              if (cat.claims.catreplay === 1) {
+                if (count > 1) {
+                  throw new ReplayNotAllowedError(count);
+                }
+              } else if (
+                cat.claims.catreplay === 2 &&
+                this.opts.reuseDetection
+              ) {
+                if (
+                  await this.opts.reuseDetection(cat, this.store, this.logger)
+                ) {
+                  throw new InvalidReuseDetected();
+                }
+              }
+            }
           }
           if (cat && this.logger) {
             await this.logger.logToken(cat);
@@ -294,7 +320,9 @@ export class HttpValidator {
           err instanceof InvalidAudienceError ||
           err instanceof KeyNotFoundError ||
           err instanceof TokenExpiredError ||
-          err instanceof UriNotAllowedError
+          err instanceof UriNotAllowedError ||
+          err instanceof ReplayNotAllowedError ||
+          err instanceof InvalidReuseDetected
         ) {
           return {
             status: 401,

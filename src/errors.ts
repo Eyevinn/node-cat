@@ -80,3 +80,15 @@ export class RenewalClaimError extends Error {
     super(reason);
   }
 }
+
+export class ReplayNotAllowedError extends Error {
+  constructor(count: number) {
+    super(`Replay not allowed: ${count}`);
+  }
+}
+
+export class InvalidReuseDetected extends Error {
+  constructor() {
+    super(`Invalid reuse detected`);
+  }
+}

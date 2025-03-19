@@ -45,7 +45,7 @@ Features:
 | Expiration (`exp`)                                        | Yes      |
 | Not Before (`nbf`)                                        | Yes      |
 | CWT ID (`cti`)                                            | Yes      |
-| Common Access Token Replay (`catreplay`)                  | No       |
+| Common Access Token Replay (`catreplay`)                  | Yes      |
 | Common Access Token Probability of Rejection (`catpor`)   | No       |
 | Common Access Token Version (`catv`)                      | No       |
 | Common Access Token Network IP (`catnip`)                 | No       |
@@ -305,6 +305,53 @@ class MyLogger implements ITokenLogger {
     this.db.insert(token);
   }
 }
+```
+
+## Token Reuse Detection
+
+Enforcing and detecting invalid token reuse when `catreplay` claim has a value of 2 is an implementation-defined process.
+
+You provide a custom callback function to the HTTP validator. This callback is provided with the Common Access Token, store and logger. Pseudo code as an example.
+
+```javascript
+class MyLogger implements ITokenLogger {
+  async logToken(token: CommonAccessToken): Promise<void> {
+    if (!this.db.connected) {
+      await this.db.connect();
+    }
+    this.db.insert(token);
+  }
+  async getLogsForToken(token: CommonAccessToken): Promise<LogList[]> {
+    return await this.db.find({ cti: token.cti });
+  }
+}
+
+const reuseDetection = async (
+  cat: CommonAccessToken,
+  store?: ICTIStore,
+  logger?: ITokenLogger
+) => {
+  if (logger) {
+    const logs = await logger.getLogsForToken(cat);
+    return tokenLogsInPeriod(logs, 5) > 10; // two many uses within a 5 second period
+  }
+}
+
+const httpValidator = new HttpValidator({
+  keys: [
+    {
+      kid: 'Symmetric256',
+      key: Buffer.from(
+        '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+        'hex'
+      )
+    }
+  ],
+  issuer: 'eyevinn',
+  store: new MyLogger(),
+  reuseDetection
+});
+...
 ```
 
 ## Development
