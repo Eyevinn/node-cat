@@ -54,7 +54,7 @@ Features:
 | Geohash (`geohash`)                                       | No       |
 | Common Access Token Altitude (`catgeoalt`)                | No       |
 | Common Access Token TLS Public Key (`cattpk`)             | No       |
-| Common ACcess Token Renewal (`catr`) claim                | Yes      |
+| Common Access Token Renewal (`catr`) claim                | Yes      |
 
 ## Requirements
 
