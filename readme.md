@@ -5,6 +5,9 @@
 <div align="center">
   Node library for Common Access Token (CTA-5007)
   <br />
+  <br />
+  :book: <b><a href="https://eyevinn.github.io/node-cat/">SDK Documentation</a></b> :eyes:
+  <br />  
 </div>
 
 <div align="center">
