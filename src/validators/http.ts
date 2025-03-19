@@ -212,20 +212,14 @@ export class HttpValidator {
 
     let cat;
     const headerName = 'cta-common-access-token';
-    let catrType;
-    let token;
+    const { token, catrType } = this.findToken(request, headerName, url);
 
-    // Check for token in headers first
-    if (request.headers[headerName]) {
-      token = Array.isArray(request.headers[headerName])
-        ? request.headers[headerName][0]
-        : request.headers[headerName];
-      catrType = 'header';
-    } else if (url && url.searchParams.has(this.tokenUriParam)) {
-      token = url.searchParams.get(this.tokenUriParam);
-      catrType = 'query';
-    }
-    if (token) {
+    if (this.opts.tokenMandatory && !token) {
+      throw new NoTokenFoundError();
+    } else {
+      if (!token) {
+        return { status: 200 };
+      }
       try {
         const result = await validator.validate(token, 'mac', {
           issuer: this.opts.issuer,
@@ -235,78 +229,29 @@ export class HttpValidator {
         cat = result.cat;
         if (!result.error) {
           let count;
+          let code = 200;
           // CAT is acceptable
-          if (cat && this.store) {
-            count = await this.store.storeToken(cat);
+          if (cat) {
+            if (this.store) {
+              count = await this.store.storeToken(cat);
+            }
+            if (this.logger) {
+              await this.logger.logToken(cat);
+            }
             if (cat.claims.catreplay !== undefined) {
-              if (cat.claims.catreplay === 1) {
-                if (count > 1) {
-                  throw new ReplayNotAllowedError(count);
-                }
-              } else if (
-                cat.claims.catreplay === 2 &&
-                this.opts.reuseDetection
-              ) {
-                if (
-                  await this.opts.reuseDetection(cat, this.store, this.logger)
-                ) {
-                  throw new InvalidReuseDetected();
-                }
-              }
+              await this.handleReplay({ cat, count });
             }
-          }
-          if (cat && this.logger) {
-            await this.logger.logToken(cat);
-          }
-          if (
-            cat &&
-            cat?.shouldRenew &&
-            this.opts.autoRenewEnabled &&
-            response &&
-            cat.keyId
-          ) {
-            // Renew token
-            const renewedToken = await validator.renewToken(cat, {
-              type: 'mac',
-              issuer: this.opts.issuer,
-              kid: cat.keyId,
-              alg: this.opts.alg || 'HS256'
+            const { status } = await this.handleAutoRenew({
+              validator,
+              cat,
+              catrType,
+              headerName,
+              response,
+              url
             });
-            const catr = cat.claims.catr as any;
-            if (
-              catr.type === 'header' ||
-              (catr.type === 'automatic' && catrType === 'header')
-            ) {
-              response.setHeader(
-                catr['header-name'] || headerName,
-                renewedToken +
-                  (catr['header-params'] ? `;${catr['header-params']}` : '')
-              );
-            } else if (
-              catr.type === 'cookie' ||
-              (catr.type === 'automatic' && catrType === 'cookie')
-            ) {
-              const cookieName =
-                catr['cookie-name'] || 'cta-common-access-token';
-              response.setHeader(
-                'Set-Cookie',
-                `${cookieName}=${renewedToken}${
-                  catr['cookie-params'] ? '; ' + catr['cookie-params'] : ''
-                }`
-              );
-            } else if (
-              catr.type === 'redirect' ||
-              (catr.type === 'automatic' && catrType === 'query')
-            ) {
-              if (url) {
-                const redirectUrl = url;
-                redirectUrl.searchParams.delete(this.tokenUriParam);
-                redirectUrl.searchParams.set(this.tokenUriParam, renewedToken);
-                response.setHeader('Location', redirectUrl.toString());
-              }
-            }
+            code = status;
           }
-          return { status: 200, claims: cat?.claims, count };
+          return { status: code, claims: cat?.claims, count };
         } else {
           return {
             status: 401,
@@ -335,8 +280,110 @@ export class HttpValidator {
         }
       }
     }
-    if (this.opts.tokenMandatory) {
-      throw new NoTokenFoundError();
+  }
+
+  private findToken(
+    request: IncomingMessage,
+    headerName: string,
+    url?: URL
+  ): { token?: string; catrType: string } {
+    let catrType = 'header';
+    let token = undefined;
+    // Check for token in headers first
+    if (request.headers[headerName]) {
+      token = Array.isArray(request.headers[headerName])
+        ? request.headers[headerName]![0]
+        : (request.headers[headerName] as string);
+      catrType = 'header';
+    } else if (url && url.searchParams.has(this.tokenUriParam)) {
+      token = url.searchParams.get(this.tokenUriParam) || undefined;
+      catrType = 'query';
+    }
+    return { token, catrType };
+  }
+
+  private async handleReplay({
+    cat,
+    count
+  }: {
+    cat: CommonAccessToken;
+    count?: number;
+  }) {
+    if (cat.claims.catreplay === 1 && count) {
+      if (count > 1) {
+        throw new ReplayNotAllowedError(count);
+      }
+    } else if (cat.claims.catreplay === 2 && this.opts.reuseDetection) {
+      if (await this.opts.reuseDetection(cat, this.store, this.logger)) {
+        throw new InvalidReuseDetected();
+      }
+    }
+  }
+
+  private async handleAutoRenew({
+    validator,
+    cat,
+    catrType,
+    headerName,
+    response,
+    url
+  }: {
+    validator: CAT;
+    cat: CommonAccessToken;
+    catrType?: string;
+    headerName: string;
+    response?: OutgoingMessage;
+    url?: URL;
+  }) {
+    if (!cat.keyId) {
+      throw new Error('Key ID not found');
+    }
+    if (
+      cat &&
+      cat?.shouldRenew &&
+      this.opts.autoRenewEnabled &&
+      response &&
+      cat.keyId
+    ) {
+      // Renew token
+      const renewedToken = await validator.renewToken(cat, {
+        type: 'mac',
+        issuer: this.opts.issuer,
+        kid: cat.keyId,
+        alg: this.opts.alg || 'HS256'
+      });
+      const catr = cat.claims.catr as any;
+      if (
+        catr.type === 'header' ||
+        (catr.type === 'automatic' && catrType === 'header')
+      ) {
+        response.setHeader(
+          catr['header-name'] || headerName,
+          renewedToken +
+            (catr['header-params'] ? `;${catr['header-params']}` : '')
+        );
+      } else if (
+        catr.type === 'cookie' ||
+        (catr.type === 'automatic' && catrType === 'cookie')
+      ) {
+        const cookieName = catr['cookie-name'] || 'cta-common-access-token';
+        response.setHeader(
+          'Set-Cookie',
+          `${cookieName}=${renewedToken}${
+            catr['cookie-params'] ? '; ' + catr['cookie-params'] : ''
+          }`
+        );
+      } else if (
+        catr.type === 'redirect' ||
+        (catr.type === 'automatic' && catrType === 'query')
+      ) {
+        if (url) {
+          const redirectUrl = url;
+          redirectUrl.searchParams.delete(this.tokenUriParam);
+          redirectUrl.searchParams.set(this.tokenUriParam, renewedToken);
+          response.setHeader('Location', redirectUrl.toString());
+        }
+      }
     }
     return { status: 200 };
   }
