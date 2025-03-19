@@ -1,5 +1,9 @@
 import crypto from 'crypto';
-import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
+import {
+  CommonAccessToken,
+  CommonAccessTokenDict,
+  CommonAccessTokenFactory
+} from './cat';
 import { KeyNotFoundError } from './errors';
 
 export { CommonAccessToken } from './cat';
@@ -155,6 +159,29 @@ export class CAT {
       claims['cti'] = crypto.randomBytes(16).toString('hex');
     }
     const cat = new CommonAccessToken(claims);
+    if (opts && opts.type == 'mac') {
+      const key = this.keys[opts.kid];
+      if (!key) {
+        throw new Error('Key not found');
+      }
+      await cat.mac({ k: key, kid: opts.kid }, opts.alg, {
+        addCwtTag: this.expectCwtTag
+      });
+      if (!cat.raw) {
+        throw new Error('Failed to MAC token');
+      }
+      return cat.raw.toString('base64');
+    }
+  }
+
+  public async generateFromJson(
+    dict: CommonAccessTokenDict,
+    opts?: CatGenerateOptions
+  ) {
+    if (opts?.generateCwtId) {
+      dict['cti'] = crypto.randomBytes(16).toString('hex');
+    }
+    const cat = CommonAccessTokenFactory.fromDict(dict);
     if (opts && opts.type == 'mac') {
       const key = this.keys[opts.kid];
       if (!key) {

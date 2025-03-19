@@ -208,7 +208,7 @@ const generator = new CAT({
     )
   }
 });
-const base64encoded = await generator.generate(
+const base64encoded = await generator.generateFromJson(
   {
     iss: 'coap://as.example.com',
     sub: 'jonas',
@@ -216,12 +216,12 @@ const base64encoded = await generator.generate(
     exp: 1444064944,
     nbf: 1443944944,
     iat: 1443944944,
-    catr: CommonAccessTokenRenewal.fromDict({
+    catr: {
       type: 'header',
       'header-name': 'cta-common-access-token',
       expadd: 120,
       deadline: 60
-    }).payload
+    }
   },
   {
     type: 'mac',

@@ -48,6 +48,68 @@ describe('CAT', () => {
     });
   });
 
+  test('can generate a token from a JSON object and verify it', async () => {
+    const generator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'coap://as.example.com',
+        exp: Math.floor(Date.now() / 1000) + 60,
+        catr: {
+          type: 'header',
+          'header-name': 'cta-common-access-token',
+          expadd: 120,
+          deadline: 60
+        },
+        catu: {
+          scheme: {
+            'exact-match': 'https'
+          }
+        }
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'coap://as.example.com',
+      url: new URL('https://example.com')
+    });
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims).toEqual({
+      iss: 'coap://as.example.com',
+      catr: {
+        deadline: 60,
+        expadd: 120,
+        'header-name': 'cta-common-access-token',
+        type: 'header'
+      },
+      catu: {
+        scheme: {
+          'exact-match': 'https'
+        }
+      },
+      exp: expect.any(Number)
+    });
+  });
+
   test('can validate a MAC:ed token with standard claims', async () => {
     const base64encoded =
       '0YRDoQEFoQRMU3ltbWV0cmljMjU2eDZkOTAxMDNhMTAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmRYIDL8dIteq8pMXXX9oL4eo2NX1kQUaselV6p/JHSEVXWX';
