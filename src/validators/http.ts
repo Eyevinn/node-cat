@@ -13,6 +13,7 @@ import {
   CloudFrontResponse
 } from 'aws-lambda';
 import { CommonAccessTokenDict } from '../cat';
+import { ICTIStore } from '../stores/interface';
 
 interface HttpValidatorKey {
   kid: string;
@@ -27,12 +28,14 @@ export interface HttpValidatorOptions {
   keys: HttpValidatorKey[];
   issuer: string;
   audience?: string[];
+  store?: ICTIStore;
 }
 
 export interface HttpResponse {
   status: number;
   message?: string;
   claims?: CommonAccessTokenDict;
+  count?: number;
 }
 
 export class NoTokenFoundError extends Error {
@@ -55,8 +58,9 @@ export class NoTokenFoundError extends Error {
  *       )
  *     }
  *   ],
- *   issuer: 'eyevinn'
- *   audience: ['one', 'two'] // Optional
+ *   issuer: 'eyevinn',
+ *   audience: ['one', 'two'], // Optional
+ *   store: new MemoryCTIStore() // Optional store for tracking token usage
  *  });
  *  const result = await httpValidator.validateHttpRequest(
  *    request,
@@ -68,6 +72,7 @@ export class HttpValidator {
   private keys: { [key: string]: Buffer } = {};
   private opts: HttpValidatorOptions;
   private tokenUriParam: string;
+  private store?: ICTIStore;
 
   constructor(opts: HttpValidatorOptions) {
     opts.keys.forEach((k: HttpValidatorKey) => {
@@ -77,6 +82,7 @@ export class HttpValidator {
     this.opts.tokenMandatory = opts.tokenMandatory ?? true;
     this.opts.autoRenewEnabled = opts.autoRenewEnabled ?? true;
     this.tokenUriParam = opts.tokenUriParam ?? 'cat';
+    this.store = opts.store;
   }
 
   public async validateCloudFrontRequest(
@@ -154,7 +160,11 @@ export class HttpValidator {
         });
         cat = result.cat;
         if (!result.error) {
+          let count;
           // CAT is acceptable
+          if (cat && this.store) {
+            count = await this.store.storeToken(cat);
+          }
           if (
             cat &&
             cat?.shouldRenew &&
@@ -203,7 +213,7 @@ export class HttpValidator {
               }
             }
           }
-          return { status: 200, claims: cat?.claims };
+          return { status: 200, claims: cat?.claims, count };
         } else {
           return {
             status: 401,

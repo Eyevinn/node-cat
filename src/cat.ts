@@ -329,6 +329,14 @@ export class CommonAccessToken {
     return false;
   }
 
+  get cti(): string | undefined {
+    const tokenId = this.payload.get(claimsToLabels['cti']);
+    if (tokenId) {
+      return claimTransformReverse['cti'](tokenId as Buffer);
+    }
+    return undefined;
+  }
+
   get claims(): CommonAccessTokenDict {
     const result: CommonAccessTokenDict = {};
     this.payload.forEach((value, param) => {

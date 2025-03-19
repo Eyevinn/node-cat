@@ -1,6 +1,6 @@
 import http from 'node:http';
 
-import { HttpValidator } from '../src';
+import { HttpValidator, RedisCTIStore } from '../src';
 
 const httpValidator = new HttpValidator({
   keys: [
@@ -12,11 +12,15 @@ const httpValidator = new HttpValidator({
       )
     }
   ],
-  issuer: 'eyevinn'
+  issuer: 'eyevinn',
+  store: new RedisCTIStore(
+    new URL(process.env.REDIS_URL || 'redis://localhost:6379')
+  )
 });
 
 const server = http.createServer(async (req, res) => {
   const result = await httpValidator.validateHttpRequest(req, res);
+  console.log(result);
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });
