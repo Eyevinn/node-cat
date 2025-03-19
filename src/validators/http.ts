@@ -14,6 +14,7 @@ import {
 } from 'aws-lambda';
 import { CommonAccessTokenDict } from '../cat';
 import { ICTIStore } from '../stores/interface';
+import { ITokenLogger } from '../loggers/interface';
 
 interface HttpValidatorKey {
   kid: string;
@@ -29,6 +30,7 @@ export interface HttpValidatorOptions {
   issuer: string;
   audience?: string[];
   store?: ICTIStore;
+  logger?: ITokenLogger;
 }
 
 export interface HttpResponse {
@@ -73,6 +75,7 @@ export class HttpValidator {
   private opts: HttpValidatorOptions;
   private tokenUriParam: string;
   private store?: ICTIStore;
+  private logger?: ITokenLogger;
 
   constructor(opts: HttpValidatorOptions) {
     opts.keys.forEach((k: HttpValidatorKey) => {
@@ -83,6 +86,7 @@ export class HttpValidator {
     this.opts.autoRenewEnabled = opts.autoRenewEnabled ?? true;
     this.tokenUriParam = opts.tokenUriParam ?? 'cat';
     this.store = opts.store;
+    this.logger = opts.logger;
   }
 
   public async validateCloudFrontRequest(
@@ -164,6 +168,9 @@ export class HttpValidator {
           // CAT is acceptable
           if (cat && this.store) {
             count = await this.store.storeToken(cat);
+          }
+          if (cat && this.logger) {
+            await this.logger.logToken(cat);
           }
           if (
             cat &&

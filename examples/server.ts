@@ -1,7 +1,15 @@
 import http from 'node:http';
 
-import { HttpValidator, RedisCTIStore } from '../src';
+import {
+  ConsoleLogger,
+  HttpValidator,
+  MemoryCTIStore,
+  RedisCTIStore
+} from '../src';
 
+const store = process.env.REDIS_URL
+  ? new RedisCTIStore(new URL(process.env.REDIS_URL))
+  : new MemoryCTIStore();
 const httpValidator = new HttpValidator({
   keys: [
     {
@@ -13,14 +21,12 @@ const httpValidator = new HttpValidator({
     }
   ],
   issuer: 'eyevinn',
-  store: new RedisCTIStore(
-    new URL(process.env.REDIS_URL || 'redis://localhost:6379')
-  )
+  store,
+  logger: new ConsoleLogger()
 });
 
 const server = http.createServer(async (req, res) => {
   const result = await httpValidator.validateHttpRequest(req, res);
-  console.log(result);
   res.writeHead(result.status, { 'Content-Type': 'text/plain' });
   res.end(result.message || 'ok');
 });
