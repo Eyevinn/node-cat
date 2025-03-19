@@ -279,7 +279,8 @@ Log how tokens are being used to be able to analyze detect usage anamolies with 
 This just logs the token to stdout in a JSON format.
 
 ```javascript
-const logging = new ConsoleLogging();
+import { ConsoleLogger } from '@eyevinn/cat';
+const logging = new ConsoleLogger();
 // Will output for example
 // {"cti":"b43c9cef64ca7dc83af8a33f39fc7168","timestamp":1742386792234,"iat":1742386782,"exp":1742386902,"sub":"jonas"}
 // {"cti":"b43c9cef64ca7dc83af8a33f39fc7168","timestamp":1742386799501,"iat":1742386782,"exp":1742386902,"sub":"jonas"}
