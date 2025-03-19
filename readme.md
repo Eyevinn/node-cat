@@ -250,7 +250,7 @@ const store = new RedisCTIStore('redis://localhost:6379');
 
 ### Custom Store
 
-To implement your own store you implement the interface `ICatStore`, for example:
+To implement your own store you implement the interface `ICTIStore`, for example:
 
 ```javascript
 import { ICTIStore, CommonAccessToken } from '@eyvinn/cat';
