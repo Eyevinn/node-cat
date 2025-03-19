@@ -347,7 +347,7 @@ describe('CAT claims', () => {
     });
     expect(result.error).not.toBeDefined();
     expect(result.cat).toBeDefined();
-    expect(result.cat!.claims.cti).toBeDefined();
+    expect(result.cat!.cti).toBeDefined();
   });
 
   test('can renew a token', async () => {
