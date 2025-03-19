@@ -3,10 +3,13 @@ import { CommonAccessToken, CommonAccessTokenFactory } from './cat';
 import { KeyNotFoundError } from './errors';
 
 export { CommonAccessToken } from './cat';
-export { HttpValidator } from './validators/http';
-export { MemoryCTIStore } from './stores/memory';
 export { CommonAccessTokenRenewal } from './catr';
 export { CommonAccessTokenUri } from './catu';
+
+export { HttpValidator } from './validators/http';
+export { ICTIStore } from './stores/interface';
+export { MemoryCTIStore } from './stores/memory';
+export { RedisCTIStore } from './stores/redis';
 
 export type CatValidationTypes = 'mac' | 'sign' | 'none';
 

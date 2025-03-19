@@ -28,6 +28,7 @@ Features:
 - HTTP and CloudFront Lambda handlers supporting
   - Validation and parsing of tokens
   - Handle automatic renewal of tokens
+  - Token usage count using store plugins (see further down for available plugins)
 
 ## Claims Validation Support
 
@@ -68,7 +69,7 @@ Features:
 ### Validate CTA Common Access Token in HTTP incoming message
 
 ```javascript
-import { HttpValidator, MemoryCTIStore } from '@eyevinn/cat';
+import { HttpValidator, RedisCTIStore } from '@eyevinn/cat';
 
 const httpValidator = new HttpValidator({
   keys: [
@@ -84,7 +85,7 @@ const httpValidator = new HttpValidator({
   tokenMandatory: true // Optional (default: true)
   issuer: 'eyevinn',
   audience: ['one', 'two'], // Optional
-  store: new MemoryCTIStore() // Where to store token usage count. Optional (default: none)
+  store: new RedisCTIStore(new URL(process.env.REDIS_URL || 'redis://localhost:6379')) // Where to store token usage count. Optional (default: none)
 });
 
 const server = http.createServer((req, res) => {
@@ -227,6 +228,44 @@ const base64encoded = await generator.generate(
     generateCwtId: true // automatically generate a random CWT Id (cti) claim (default: false)
   }
 );
+```
+
+## Token store plugins
+
+To enable token usage count the HTTP validators requires a way to store the token id:s that has been used. The following types of stores are supported today.
+
+### Memory Store
+
+```javascript
+import { MemoryCTIStore } from '@eyevinn/cat';
+const store = new MemoryCTIStore();
+```
+
+### Redis Store
+
+```javascript
+import { RedisCTIStore } from '@eyevinn/cat';
+const store = new RedisCTIStore('redis://localhost:6379');
+```
+
+### Custom Store
+
+To implement your own store you implement the interface `ICatStore`, for example:
+
+```javascript
+import { ICTIStore, CommonAccessToken } from '@eyvinn/cat';
+
+class MyStore implements ICTIStore {
+  async storeToken(token: CommonAccessToken): Promise<number> {
+    const cti = token.cti;
+    // Store CTI in your key/value store and return new count
+  }
+
+  async getTokenCount(token: CommonAccessToken): Promise<number> {
+    const cti = token.cti;
+    // Return current token count for a CTI
+  }
+}
 ```
 
 ## Development

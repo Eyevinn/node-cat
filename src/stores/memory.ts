@@ -1,7 +1,7 @@
 import { CommonAccessToken } from '..';
-import { CTIStore } from './interface';
+import { ICTIStore } from './interface';
 
-export class MemoryCTIStore implements CTIStore {
+export class MemoryCTIStore implements ICTIStore {
   private store: { [key: string]: number } = {};
 
   async storeToken(token: CommonAccessToken): Promise<number> {

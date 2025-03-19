@@ -1,6 +1,6 @@
 import { CommonAccessToken } from '..';
 
-export interface CTIStore {
+export interface ICTIStore {
   storeToken(token: CommonAccessToken): Promise<number>;
   getTokenCount(token: CommonAccessToken): Promise<number>;
 }

@@ -13,7 +13,7 @@ import {
   CloudFrontResponse
 } from 'aws-lambda';
 import { CommonAccessTokenDict } from '../cat';
-import { CTIStore } from '../stores/interface';
+import { ICTIStore } from '../stores/interface';
 
 interface HttpValidatorKey {
   kid: string;
@@ -28,7 +28,7 @@ export interface HttpValidatorOptions {
   keys: HttpValidatorKey[];
   issuer: string;
   audience?: string[];
-  store?: CTIStore;
+  store?: ICTIStore;
 }
 
 export interface HttpResponse {
@@ -72,7 +72,7 @@ export class HttpValidator {
   private keys: { [key: string]: Buffer } = {};
   private opts: HttpValidatorOptions;
   private tokenUriParam: string;
-  private store?: CTIStore;
+  private store?: ICTIStore;
 
   constructor(opts: HttpValidatorOptions) {
     opts.keys.forEach((k: HttpValidatorKey) => {
