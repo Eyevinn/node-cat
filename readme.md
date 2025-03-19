@@ -192,7 +192,7 @@ try {
 ### Generate token
 
 ```javascript
-import { CAT } from '@eyevinn/cat';
+import { CAT, CommonAccessTokenRenewal } from '@eyevinn/cat';
 
 const generator = new CAT({
   keys: {
@@ -209,7 +209,13 @@ const base64encoded = await generator.generate(
     aud: 'coap://light.example.com',
     exp: 1444064944,
     nbf: 1443944944,
-    iat: 1443944944
+    iat: 1443944944,
+    catr: CommonAccessTokenRenewal.fromDict({
+      type: 'header',
+      'header-name': 'cta-common-access-token',
+      expadd: 120,
+      deadline: 60
+    }).payload
   },
   {
     type: 'mac',

@@ -4,6 +4,8 @@ import { KeyNotFoundError } from './errors';
 
 export { CommonAccessToken } from './cat';
 export { HttpValidator } from './validators/http';
+export { CommonAccessTokenRenewal } from './catr';
+export { CommonAccessTokenUri } from './catu';
 
 export type CatValidationTypes = 'mac' | 'sign' | 'none';
 
