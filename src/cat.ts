@@ -22,6 +22,7 @@ const claimsToLabels: { [key: string]: number } = {
   iat: 6, // 6 tag value 1
   cti: 7, // 2,
   cnf: 8,
+  geohash: 282,
   catreplay: 308,
   catpor: 309,
   catv: 310,
@@ -48,6 +49,7 @@ const labelsToClaim: { [key: number]: string } = {
   6: 'iat',
   7: 'cti',
   8: 'cnf',
+  282: 'geohash',
   308: 'catreplay',
   309: 'catpor',
   310: 'catv',
