@@ -107,7 +107,18 @@ const claimTypeDictValidators: {
     (typeof value === 'string' && isNetworkIp(value)),
   catu: (value) => typeof value === 'object',
   catm: (value) => Array.isArray(value),
-  cattpk: (value) => typeof value === 'string' && isHex(value)
+  cath: (value) => typeof value === 'object',
+  catgeoiso3166: (value) => Array.isArray(value),
+  catgeocoord: (value) => Array.isArray(value),
+  catgeoalt: (value) => Array.isArray(value),
+  cattpk: (value) => typeof value === 'string' && isHex(value),
+  sub: (value) => typeof value === 'string',
+  iat: (value) => typeof value === 'number',
+  catifdata: (value) => typeof value === 'string' || Array.isArray(value),
+  cnf: (value) => typeof value === 'object',
+  catdpop: (value) => typeof value === 'object',
+  catif: (value) => typeof value === 'object',
+  catr: (value) => typeof value === 'object'
 };
 
 const CWT_TAG = 61;
