@@ -52,7 +52,7 @@ Features:
 | Common Access Token URI (`catu`)                          | Yes      |
 | Common Access Token Methods (`catm`)                      | Yes      |
 | Common Access Token ALPN (`catalpn`)                      | No       |
-| Common Access Token Header (`cath`)                       | No       |
+| Common Access Token Header (`cath`)                       | Yes      |
 | Common Access Token Geographic ISO3166 (`catgeoiso3166`)  | No       |
 | Common Access Token Geographic Coordinate (`catgeocoord`) | No       |
 | Geohash (`geohash`)                                       | No       |

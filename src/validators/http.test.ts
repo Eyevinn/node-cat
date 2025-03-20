@@ -869,4 +869,49 @@ describe('HTTP Request CAT Validator with store', () => {
     const result = await httpValidator.validateHttpRequest(request);
     expect(result.status).toBe(401);
   });
+
+  test('fail if cath claims matches a header value that is prohibited', async () => {
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        cath: {
+          'User-Agent': {
+            contains: 'Mozilla'
+          },
+          'My-Example-Header': {
+            exect: 'CustomValue'
+          }
+        }
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+
+    const request = createRequest({
+      method: 'POST',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'My-Example-Header': 'CustomValue'
+      }
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(401);
+  });
 });
