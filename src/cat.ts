@@ -4,6 +4,7 @@ import {
   InvalidAudienceError,
   InvalidClaimTypeError,
   InvalidIssuerError,
+  InvalidJsonError,
   RenewalClaimError,
   TokenExpiredError,
   TokenNotActiveError,
@@ -77,11 +78,36 @@ const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
   cattpk: (value: Buffer) => value.toString('hex')
 };
 
-const claimTypeValidators: { [key: string]: (value: string) => boolean } = {
+const claimTypeValidators: {
+  [key: string]: (value: CommonAccessTokenValue) => boolean;
+} = {
   iss: (value) => typeof value === 'string',
   exp: (value) => typeof value === 'number',
   aud: (value) => typeof value === 'string' || Array.isArray(value),
-  nbf: (value) => typeof value === 'number'
+  nbf: (value) => typeof value === 'number',
+  cattpk: (value) => typeof value === 'object'
+};
+
+const isHex = (value: string) => /^[0-9a-fA-F]+$/.test(value);
+const isNetworkIp = (value: string) => /^[0-9a-fA-F:.]+$/.test(value);
+
+const claimTypeDictValidators: {
+  [key: string]: (value: unknown) => boolean;
+} = {
+  iss: (value) => typeof value === 'string',
+  exp: (value) => typeof value === 'number',
+  aud: (value) => typeof value === 'string' || Array.isArray(value),
+  nbf: (value) => typeof value === 'number',
+  cti: (value) => typeof value === 'string' && isHex(value),
+  catreplay: (value) => typeof value === 'number' && value >= 0,
+  catpor: (value) => Array.isArray(value),
+  catv: (value) => typeof value === 'number' && value >= 0,
+  catnip: (value) =>
+    typeof value === 'number' ||
+    (typeof value === 'string' && isNetworkIp(value)),
+  catu: (value) => typeof value === 'object',
+  catm: (value) => Array.isArray(value),
+  cattpk: (value) => typeof value === 'string' && isHex(value)
 };
 
 const CWT_TAG = 61;
@@ -163,6 +189,12 @@ function updateMapFromDict(
 ): CommonAccessTokenClaims {
   const claims: CommonAccessTokenClaims = {};
   for (const param in dict) {
+    if (
+      claimTypeDictValidators[param] &&
+      !claimTypeDictValidators[param](dict[param])
+    ) {
+      throw new InvalidJsonError(param);
+    }
     const key = claimsToLabels[param];
     if (param === 'catu') {
       claims[key] = CommonAccessTokenUri.fromDict(
@@ -195,6 +227,7 @@ export class CommonAccessToken {
       claims['catv'] = 1;
     }
     this.payload = updateMapFromClaims(claims);
+    this.validateTypes();
   }
 
   /**
@@ -292,8 +325,8 @@ export class CommonAccessToken {
     for (const [key, value] of this.payload) {
       const claim = labelsToClaim[key];
       if (value && claimTypeValidators[claim]) {
-        if (!claimTypeValidators[claim](value as string)) {
-          throw new InvalidClaimTypeError(claim, value as string);
+        if (!claimTypeValidators[claim](value)) {
+          throw new InvalidClaimTypeError(claim, value);
         }
       }
     }
