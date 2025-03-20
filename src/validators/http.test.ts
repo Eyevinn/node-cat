@@ -833,4 +833,40 @@ describe('HTTP Request CAT Validator with store', () => {
     const result3 = await httpValidator.validateHttpRequest(request);
     expect(result3.status).toBe(401);
   });
+
+  test('fails if an HTTP method is used that is not allowed by the claim', async () => {
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        catm: ['GET', 'DELETE']
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+
+    const request = createRequest({
+      method: 'POST',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const result = await httpValidator.validateHttpRequest(request);
+    expect(result.status).toBe(401);
+  });
 });

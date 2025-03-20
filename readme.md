@@ -50,7 +50,7 @@ Features:
 | Common Access Token Version (`catv`)                      | Yes      |
 | Common Access Token Network IP (`catnip`)                 | No       |
 | Common Access Token URI (`catu`)                          | Yes      |
-| Common Access Token Methods (`catm`)                      | No       |
+| Common Access Token Methods (`catm`)                      | Yes      |
 | Common Access Token ALPN (`catalpn`)                      | No       |
 | Common Access Token Header (`cath`)                       | No       |
 | Common Access Token Geographic ISO3166 (`catgeoiso3166`)  | No       |
