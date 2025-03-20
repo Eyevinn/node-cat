@@ -5,6 +5,7 @@ import {
   InvalidIssuerError,
   InvalidReuseDetected,
   KeyNotFoundError,
+  MethodNotAllowedError,
   ReplayNotAllowedError,
   TokenExpiredError,
   UriNotAllowedError
@@ -241,6 +242,7 @@ export class HttpValidator {
             if (cat.claims.catreplay !== undefined) {
               await this.handleReplay({ cat, count });
             }
+            await this.checkAllowedMethods(cat, request);
             const { status } = await this.handleAutoRenew({
               validator,
               cat,
@@ -267,7 +269,8 @@ export class HttpValidator {
           err instanceof TokenExpiredError ||
           err instanceof UriNotAllowedError ||
           err instanceof ReplayNotAllowedError ||
-          err instanceof InvalidReuseDetected
+          err instanceof InvalidReuseDetected ||
+          err instanceof MethodNotAllowedError
         ) {
           return {
             status: 401,
@@ -300,6 +303,18 @@ export class HttpValidator {
       catrType = 'query';
     }
     return { token, catrType };
+  }
+
+  private checkAllowedMethods(
+    cat: CommonAccessToken,
+    request: IncomingMessage
+  ) {
+    if (cat.claims.catm && request.method) {
+      const methods = cat.claims.catm as string[];
+      if (methods.indexOf(request.method) === -1) {
+        throw new MethodNotAllowedError(request.method);
+      }
+    }
   }
 
   private async handleReplay({

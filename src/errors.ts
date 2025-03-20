@@ -98,3 +98,9 @@ export class InvalidReuseDetected extends Error {
     super(`Invalid reuse detected`);
   }
 }
+
+export class MethodNotAllowedError extends Error {
+  constructor(method: string) {
+    super(`HTTP Method ${method} not allowed`);
+  }
+}
