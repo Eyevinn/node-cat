@@ -155,9 +155,11 @@ export class HttpValidator {
     cfRequest: CloudFrontRequest
   ): Promise<HttpResponse & { cfResponse: CloudFrontResponse }> {
     const requestLike: Pick<IncomingMessage, 'headers'> &
-      Pick<IncomingMessage, 'url'> = {
+      Pick<IncomingMessage, 'url'> &
+      Pick<IncomingMessage, 'method'> = {
       headers: {},
-      url: ''
+      url: '',
+      method: cfRequest.method
     };
     const response = new OutgoingMessage();
 
@@ -309,6 +311,9 @@ export class HttpValidator {
     cat: CommonAccessToken,
     request: IncomingMessage
   ) {
+    if (cat.claims.catm && !request.method) {
+      throw new Error('Missing method in request');
+    }
     if (cat.claims.catm && request.method) {
       const methods = cat.claims.catm as string[];
       if (methods.indexOf(request.method) === -1) {
