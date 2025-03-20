@@ -82,7 +82,7 @@ describe('CAT', () => {
       catgeoiso3166: ['SE'],
       catgeocoord: [],
       geohash: [],
-      cattpk: '',
+      cattpk: 'a47019af6305d3652a918ae356cc2ca2',
       sub: 'jonas',
       iat: Math.floor(Date.now() / 1000),
       catifdata: ['catif'],
