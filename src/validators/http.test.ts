@@ -868,5 +868,25 @@ describe('HTTP Request CAT Validator with store', () => {
     });
     const result = await httpValidator.validateHttpRequest(request);
     expect(result.status).toBe(401);
+    const cfResult = await httpValidator.validateCloudFrontRequest({
+      clientIp: 'dummy',
+      method: 'POST',
+      uri: '/content/',
+      querystring: '',
+      headers: {
+        'cta-common-access-token': [
+          {
+            value: base64encoded!
+          }
+        ],
+        host: [
+          {
+            key: 'Host',
+            value: 'example.com'
+          }
+        ]
+      }
+    });
+    expect(cfResult.status).toBe(401);
   });
 });
