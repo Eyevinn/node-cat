@@ -15,9 +15,10 @@ import {
   CloudFrontRequest,
   CloudFrontResponse
 } from 'aws-lambda';
-import { CommonAccessTokenDict } from '../cat';
+import { CommonAccessTokenDict, CommonAccessTokenFactory } from '../cat';
 import { ICTIStore } from '../stores/interface';
 import { ITokenLogger } from '../loggers/interface';
+import { CatIfDictValue } from '../catif';
 
 interface HttpValidatorKey {
   kid: string;
@@ -257,8 +258,19 @@ export class HttpValidator {
           }
           return { status: code, claims: cat?.claims, count };
         } else {
+          // CAT valid but not acceptable
+          let responseCode = 401;
+          if (result.error instanceof TokenExpiredError) {
+            responseCode =
+              (cat?.claims.catif &&
+                (await this.handleCatIf({
+                  cat,
+                  response
+                }))) ||
+              401;
+          }
           return {
-            status: 401,
+            status: responseCode,
             message: result.error.message,
             claims: cat?.claims
           };
@@ -274,8 +286,9 @@ export class HttpValidator {
           err instanceof InvalidReuseDetected ||
           err instanceof MethodNotAllowedError
         ) {
+          const responseCode = 401;
           return {
-            status: 401,
+            status: responseCode,
             message: (err as Error).message,
             claims: cat?.claims
           };
@@ -322,6 +335,36 @@ export class HttpValidator {
     }
   }
 
+  private async handleCatIf({
+    cat,
+    response
+  }: {
+    cat: CommonAccessToken;
+    response?: OutgoingMessage;
+  }): Promise<number> {
+    if (!response) {
+      throw new Error('Missing response object in HTTP validator');
+    }
+    let returnCode = 401;
+    const catif: CatIfDictValue = cat.claims.catif as CatIfDictValue;
+    if (catif) {
+      for (const claim in catif) {
+        if (cat.claims[claim] !== undefined) {
+          const [code, value, keyid] = catif[claim];
+          returnCode = code;
+          for (const header in value) {
+            if (!Array.isArray(value[header])) {
+              response.setHeader(header, value[header] as string);
+            } else {
+              throw new Error('generate new claim in catif not supported yet');
+            }
+          }
+        }
+      }
+    }
+    return returnCode;
+  }
+
   private async handleReplay({
     cat,
     count
@@ -358,6 +401,7 @@ export class HttpValidator {
     if (!cat.keyId) {
       throw new Error('Key ID not found');
     }
+    let responseCode = 200;
     if (
       cat &&
       cat?.shouldRenew &&
@@ -402,9 +446,10 @@ export class HttpValidator {
           redirectUrl.searchParams.delete(this.tokenUriParam);
           redirectUrl.searchParams.set(this.tokenUriParam, renewedToken);
           response.setHeader('Location', redirectUrl.toString());
+          responseCode = 302;
         }
       }
     }
-    return { status: 200 };
+    return { status: responseCode };
   }
 }
