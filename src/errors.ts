@@ -110,3 +110,9 @@ export class MethodNotAllowedError extends Error {
     super(`HTTP Method ${method} not allowed`);
   }
 }
+
+export class InvalidCatIfError extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}

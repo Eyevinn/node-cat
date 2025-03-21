@@ -1,7 +1,15 @@
-import { claimsToLabels, labelsToClaim } from './cat';
+import { claimsToLabels, CommonAccessTokenDict, labelsToClaim } from './cat';
 
 type CatIfValue = Map<number, [number, { [key: string]: string }]>;
 export type CommonAccessTokenIfMap = Map<number, CatIfValue>;
+
+export type CatIfDictValue = {
+  [key: string]: [
+    number,
+    { [header: string]: string | [string, CommonAccessTokenDict] },
+    string?
+  ];
+};
 
 export class CommonAccessTokenIf {
   private catIfMap: CommonAccessTokenIfMap = new Map();

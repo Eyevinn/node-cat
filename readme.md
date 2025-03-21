@@ -60,7 +60,7 @@ Features:
 | Geohash (`geohash`)                                       | Yes          | No       |
 | Common Access Token Altitude (`catgeoalt`)                | Yes          | No       |
 | Common Access Token TLS Public Key (`cattpk`)             | Yes          | No       |
-| Common Access Token If (`catif`) claim                    | Yes          | No       |
+| Common Access Token If (`catif`) claim                    | Yes          | Yes      |
 | Common Access Token Renewal (`catr`) claim                | Yes          | No       |
 
 ## Requirements
@@ -204,7 +204,7 @@ try {
 ### Generate token
 
 ```javascript
-import { CAT, CommonAccessTokenRenewal } from '@eyevinn/cat';
+import { CAT } from '@eyevinn/cat';
 
 const generator = new CAT({
   keys: {
@@ -237,6 +237,53 @@ const base64encoded = await generator.generateFromJson(
   }
 );
 ```
+
+This example generates a token with a `catif` claim.
+
+```javascript
+import { CAT } from '@eyevinn/cat';
+
+const generator = new CAT({
+  keys: {
+    Symmetric256: Buffer.from(
+      '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+      'hex'
+    )
+  }
+});
+
+const json = {
+  iss: 'eyevinn',
+  exp: Math.floor(Date.now() / 1000) - 60,
+  cti: 'foobar',
+  catif: {
+    exp: [
+      307,
+      {
+        Location: [
+          'https://auth.example.net/?CAT=',
+          {
+            iss: null,
+            iat: null,
+            catu: {
+              host: { 'exact-match': 'auth.example.net' }
+            }
+          }
+        ]
+      },
+      'Symmetric256'
+    ]
+  }
+};
+const base64encoded = await generator.generateFromJson(json, {
+  type: 'mac',
+  alg: 'HS256',
+  kid: 'Symmetric256',
+  generateCwtId: true
+});
+```
+
+Providing above token to the `HttpValidator` the validator will return with a status code `307` and the header `Location` with the value of `https://auth.example.net/?CAT=<newtoken>` where `<newtoken>` is created by the JSON specified in the `catif` claim.
 
 ## Token store plugins
 

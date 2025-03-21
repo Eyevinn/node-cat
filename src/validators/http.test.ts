@@ -449,6 +449,121 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     expect(response.getHeader('cta-common-access-token')).not.toBeDefined();
   });
 
+  test('can follow the directives in catif claim when no acceptable token is provided', async () => {
+    const json = {
+      iss: 'eyevinn',
+      exp: Math.floor(Date.now() / 1000) - 60,
+      cti: 'foobar',
+      catif: {
+        exp: [
+          307,
+          {
+            Location: 'https://auth.example.net/'
+          }
+        ]
+      }
+    };
+    base64encoded = await generator.generateFromJson(json, {
+      type: 'mac',
+      alg: 'HS256',
+      kid: 'Symmetric256',
+      generateCwtId: true
+    });
+    // Validate auto renew
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const response = createResponse();
+    const result = await httpValidator.validateHttpRequest(request, response);
+    expect(response.getHeader('Location')).toBe('https://auth.example.net/');
+    expect(result.status).toBe(307);
+  });
+
+  test('can generate new cat claims based on catif directives', async () => {
+    const json = {
+      iss: 'eyevinn',
+      exp: Math.floor(Date.now() / 1000) - 60,
+      cti: 'foobar',
+      catif: {
+        exp: [
+          307,
+          {
+            Location: [
+              'https://auth.example.net/?CAT=',
+              {
+                iss: null,
+                iat: null,
+                catu: {
+                  host: { 'exact-match': 'auth.example.net' }
+                }
+              }
+            ]
+          },
+          'Symmetric256'
+        ]
+      }
+    };
+    base64encoded = await generator.generateFromJson(json, {
+      type: 'mac',
+      alg: 'HS256',
+      kid: 'Symmetric256',
+      generateCwtId: true
+    });
+    // Validate auto renew
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const response = createResponse();
+    const result = await httpValidator.validateHttpRequest(request, response);
+    expect(response.getHeader('Location')).toBeDefined();
+    const location = new URL(response.getHeader('Location') as string);
+    const newToken = location.searchParams.get('CAT');
+    expect(newToken).toBeDefined();
+    expect(result.status).toBe(307);
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const result2 = await validator.validate(newToken!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(result2.cat?.claims.iat).toBeDefined();
+  });
+
   test.skip('can handle autorenew of type redirect', async () => {
     // Validate auto renew
     const httpValidator = new HttpValidator({
