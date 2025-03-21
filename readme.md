@@ -60,7 +60,7 @@ Features:
 | Geohash (`geohash`)                                       | Yes          | No       |
 | Common Access Token Altitude (`catgeoalt`)                | Yes          | No       |
 | Common Access Token TLS Public Key (`cattpk`)             | Yes          | No       |
-| Common Access Token If (`catif`) claim                    | Yes          | No       |
+| Common Access Token If (`catif`) claim                    | Yes          | Yes      |
 | Common Access Token Renewal (`catr`) claim                | Yes          | No       |
 
 ## Requirements
