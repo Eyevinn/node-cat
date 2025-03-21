@@ -38,27 +38,30 @@ Features:
 
 ### Core Claims
 
-| Claim                                                     | Validate |
-| --------------------------------------------------------- | -------- |
-| Issuer (`iss`)                                            | Yes      |
-| Audience (`aud`)                                          | Yes      |
-| Expiration (`exp`)                                        | Yes      |
-| Not Before (`nbf`)                                        | Yes      |
-| CWT ID (`cti`)                                            | Yes      |
-| Common Access Token Replay (`catreplay`)                  | Yes      |
-| Common Access Token Probability of Rejection (`catpor`)   | No       |
-| Common Access Token Version (`catv`)                      | Yes      |
-| Common Access Token Network IP (`catnip`)                 | No       |
-| Common Access Token URI (`catu`)                          | Yes      |
-| Common Access Token Methods (`catm`)                      | Yes      |
-| Common Access Token ALPN (`catalpn`)                      | No       |
-| Common Access Token Header (`cath`)                       | No       |
-| Common Access Token Geographic ISO3166 (`catgeoiso3166`)  | No       |
-| Common Access Token Geographic Coordinate (`catgeocoord`) | No       |
-| Geohash (`geohash`)                                       | No       |
-| Common Access Token Altitude (`catgeoalt`)                | No       |
-| Common Access Token TLS Public Key (`cattpk`)             | No       |
-| Common Access Token Renewal (`catr`) claim                | Yes      |
+| Claim                                                     | Pass-through | Validate |
+| --------------------------------------------------------- | ------------ | -------- |
+| Issuer (`iss`)                                            | Yes          | Yes      |
+| Audience (`aud`)                                          | Yes          | Yes      |
+| Expiration (`exp`)                                        | Yes          | Yes      |
+| Not Before (`nbf`)                                        | Yes          | Yes      |
+| CWT ID (`cti`)                                            | Yes          | Yes      |
+| Subject (`sub`)                                           | Yes          | n/a      |
+| Issued at (`iat`)                                         | Yes          | n/a      |
+| Common Access Token Replay (`catreplay`)                  | Yes          | Yes      |
+| Common Access Token Probability of Rejection (`catpor`)   | Yes          | No       |
+| Common Access Token Version (`catv`)                      | Yes          | Yes      |
+| Common Access Token Network IP (`catnip`)                 | Yes          | No       |
+| Common Access Token URI (`catu`)                          | Yes          | Yes      |
+| Common Access Token Methods (`catm`)                      | Yes          | Yes      |
+| Common Access Token ALPN (`catalpn`)                      | No           | No       |
+| Common Access Token Header (`cath`)                       | Yes          | No       |
+| Common Access Token Geographic ISO3166 (`catgeoiso3166`)  | Yes          | No       |
+| Common Access Token Geographic Coordinate (`catgeocoord`) | Yes          | No       |
+| Geohash (`geohash`)                                       | Yes          | No       |
+| Common Access Token Altitude (`catgeoalt`)                | Yes          | No       |
+| Common Access Token TLS Public Key (`cattpk`)             | Yes          | No       |
+| Common Access Token If (`catif`) claim                    | Yes          | No       |
+| Common Access Token Renewal (`catr`) claim                | Yes          | No       |
 
 ## Requirements
 
