@@ -18,6 +18,12 @@ export class InvalidClaimTypeError extends Error {
   }
 }
 
+export class InvalidJsonError extends Error {
+  constructor(claim: string) {
+    super(`Invalid claim type for ${claim} in JSON`);
+  }
+}
+
 /**
  * Error thrown when an invalid issuer is found
  */

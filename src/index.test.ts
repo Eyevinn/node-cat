@@ -49,6 +49,77 @@ describe('CAT', () => {
     });
   });
 
+  test('can generate a token from JSON with all claims and verify it', async () => {
+    const generator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const json = {
+      iss: 'coap://as.example.com',
+      aud: ['one', 'two'],
+      exp: Math.floor(Date.now() / 1000) + 60,
+      nbf: Math.floor(Date.now() / 1000) - 60,
+      cti: 'a47019af6305d3652a918ae356cc2ca2',
+      catreplay: 0,
+      catpor: ['.00005', '087ee44f239f7a2e34b3d1649aad8c1d', 1700000000],
+      catv: 1,
+      catnip: '192.168.1.11',
+      catu: {
+        scheme: {
+          'exact-match': 'https'
+        }
+      },
+      catm: ['GET'],
+      cath: {
+        'User-Agent': {
+          'contains-match': 'Mozilla'
+        }
+      },
+      catgeoiso3166: ['SE'],
+      catgeocoord: [],
+      geohash: [],
+      cattpk: 'a47019af6305d3652a918ae356cc2ca2',
+      sub: 'jonas',
+      iat: Math.floor(Date.now() / 1000),
+      catifdata: ['catif'],
+      catif: {
+        exp: [
+          307,
+          {
+            Location: 'https://auth.example.net'
+          }
+        ]
+      },
+      catr: {
+        type: 'header',
+        'header-name': 'cta-common-access-token',
+        expadd: 120,
+        deadline: 60
+      }
+    };
+    const base64encoded = await generator.generateFromJson(json, {
+      type: 'mac',
+      alg: 'HS256',
+      kid: 'Symmetric256'
+    });
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'coap://as.example.com'
+    });
+    expect(result.cat?.claims).toEqual(json);
+  });
+
   test('can generate a token from a JSON object and verify it', async () => {
     const generator = new CAT({
       keys: {

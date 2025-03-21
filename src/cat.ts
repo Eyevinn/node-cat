@@ -4,6 +4,7 @@ import {
   InvalidAudienceError,
   InvalidClaimTypeError,
   InvalidIssuerError,
+  InvalidJsonError,
   RenewalClaimError,
   TokenExpiredError,
   TokenNotActiveError,
@@ -12,8 +13,10 @@ import {
 import { CatValidationOptions } from '.';
 import { CommonAccessTokenUri } from './catu';
 import { CommonAccessTokenRenewal } from './catr';
+import { CommonAccessTokenHeader } from './cath';
+import { CommonAccessTokenIf } from './catif';
 
-const claimsToLabels: { [key: string]: number } = {
+export const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
   sub: 2, // 3
   aud: 3, // 3
@@ -22,6 +25,7 @@ const claimsToLabels: { [key: string]: number } = {
   iat: 6, // 6 tag value 1
   cti: 7, // 2,
   cnf: 8,
+  geohash: 282,
   catreplay: 308,
   catpor: 309,
   catv: 310,
@@ -39,7 +43,7 @@ const claimsToLabels: { [key: string]: number } = {
   catr: 323
 };
 
-const labelsToClaim: { [key: number]: string } = {
+export const labelsToClaim: { [key: number]: string } = {
   1: 'iss',
   2: 'sub',
   3: 'aud',
@@ -48,6 +52,7 @@ const labelsToClaim: { [key: number]: string } = {
   6: 'iat',
   7: 'cti',
   8: 'cnf',
+  282: 'geohash',
   308: 'catreplay',
   309: 'catpor',
   310: 'catv',
@@ -75,11 +80,64 @@ const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
   cattpk: (value: Buffer) => value.toString('hex')
 };
 
-const claimTypeValidators: { [key: string]: (value: string) => boolean } = {
+const claimTypeValidators: {
+  [key: string]: (value: CommonAccessTokenValue) => boolean;
+} = {
   iss: (value) => typeof value === 'string',
   exp: (value) => typeof value === 'number',
   aud: (value) => typeof value === 'string' || Array.isArray(value),
-  nbf: (value) => typeof value === 'number'
+  nbf: (value) => typeof value === 'number',
+  cti: (value) => Buffer.isBuffer(value),
+  catreplay: (value) => typeof value === 'number',
+  catpor: (value) => Array.isArray(value),
+  catv: (value) => typeof value === 'number' && value >= 1,
+  catnip: (value) => typeof value === 'number' || typeof value === 'string',
+  catu: (value) => value instanceof Map,
+  catm: (value) => Array.isArray(value),
+  cath: (value) => value instanceof Map,
+  catgeoiso3166: (value) => Array.isArray(value),
+  catgeocoord: (value) => Array.isArray(value),
+  cattpk: (value) => Buffer.isBuffer(value),
+  sub: (value) => typeof value === 'string',
+  iat: (value) => typeof value === 'number',
+  catifdata: (value) => typeof value === 'string' || Array.isArray(value),
+  cnf: (value) => value instanceof Map,
+  catdpop: (value) => value instanceof Map,
+  catif: (value) => value instanceof Map,
+  catr: (value) => value instanceof Map
+};
+
+const isHex = (value: string) => /^[0-9a-fA-F]+$/.test(value);
+const isNetworkIp = (value: string) => /^[0-9a-fA-F:.]+$/.test(value);
+
+const claimTypeDictValidators: {
+  [key: string]: (value: unknown) => boolean;
+} = {
+  iss: (value) => typeof value === 'string',
+  exp: (value) => typeof value === 'number',
+  aud: (value) => typeof value === 'string' || Array.isArray(value),
+  nbf: (value) => typeof value === 'number',
+  cti: (value) => typeof value === 'string' && isHex(value),
+  catreplay: (value) => typeof value === 'number' && value >= 0,
+  catpor: (value) => Array.isArray(value),
+  catv: (value) => typeof value === 'number' && value >= 1,
+  catnip: (value) =>
+    typeof value === 'number' ||
+    (typeof value === 'string' && isNetworkIp(value)),
+  catu: (value) => typeof value === 'object',
+  catm: (value) => Array.isArray(value),
+  cath: (value) => typeof value === 'object',
+  catgeoiso3166: (value) => Array.isArray(value),
+  catgeocoord: (value) => Array.isArray(value),
+  catgeoalt: (value) => Array.isArray(value),
+  cattpk: (value) => typeof value === 'string' && isHex(value),
+  sub: (value) => typeof value === 'string',
+  iat: (value) => typeof value === 'number',
+  catifdata: (value) => typeof value === 'string' || Array.isArray(value),
+  cnf: (value) => typeof value === 'object',
+  catdpop: (value) => typeof value === 'object',
+  catif: (value) => typeof value === 'object',
+  catr: (value) => typeof value === 'object'
 };
 
 const CWT_TAG = 61;
@@ -88,7 +146,7 @@ const CWT_TAG = 61;
  * Common Access Token Claims
  */
 export type CommonAccessTokenClaims = {
-  [key: string]: string | number | Map<number, any>;
+  [key: string]: string | number | Map<number | string, any>;
 };
 export type CommonAccessTokenDict = {
   [key: string]: string | number | { [key: string]: any };
@@ -97,7 +155,7 @@ export type CommonAccessTokenValue =
   | string
   | number
   | Buffer
-  | Map<number, any>;
+  | Map<number | string, any>;
 
 /**
  * CWT Encryption Key
@@ -161,6 +219,12 @@ function updateMapFromDict(
 ): CommonAccessTokenClaims {
   const claims: CommonAccessTokenClaims = {};
   for (const param in dict) {
+    if (
+      claimTypeDictValidators[param] &&
+      !claimTypeDictValidators[param](dict[param])
+    ) {
+      throw new InvalidJsonError(param);
+    }
     const key = claimsToLabels[param];
     if (param === 'catu') {
       claims[key] = CommonAccessTokenUri.fromDict(
@@ -168,6 +232,14 @@ function updateMapFromDict(
       ).payload;
     } else if (param === 'catr') {
       claims[key] = CommonAccessTokenRenewal.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else if (param == 'cath') {
+      claims[key] = CommonAccessTokenHeader.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else if (param == 'catif') {
+      claims[key] = CommonAccessTokenIf.fromDict(
         dict[param] as { [key: string]: any }
       ).payload;
     } else {
@@ -193,6 +265,7 @@ export class CommonAccessToken {
       claims['catv'] = 1;
     }
     this.payload = updateMapFromClaims(claims);
+    this.validateTypes();
   }
 
   /**
@@ -290,8 +363,8 @@ export class CommonAccessToken {
     for (const [key, value] of this.payload) {
       const claim = labelsToClaim[key];
       if (value && claimTypeValidators[claim]) {
-        if (!claimTypeValidators[claim](value as string)) {
-          throw new InvalidClaimTypeError(claim, value as string);
+        if (!claimTypeValidators[claim](value)) {
+          throw new InvalidClaimTypeError(claim, value);
         }
       }
     }
@@ -394,6 +467,14 @@ export class CommonAccessToken {
         ).toDict();
       } else if (key === 'catr') {
         result[key] = CommonAccessTokenRenewal.fromMap(
+          value as Map<number, any>
+        ).toDict();
+      } else if (key === 'cath') {
+        result[key] = CommonAccessTokenHeader.fromMap(
+          value as Map<string, any>
+        ).toDict();
+      } else if (key === 'catif') {
+        result[key] = CommonAccessTokenIf.fromMap(
           value as Map<number, any>
         ).toDict();
       } else {
