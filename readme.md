@@ -285,7 +285,6 @@ const base64encoded = await generator.generateFromJson(json, {
 
 Providing above token to the `HttpValidator` the validator will return with a status code `307` and the header `Location` with the value of `https://auth.example.net/?CAT=<newtoken>` where `<newtoken>` is created by the JSON specified in the `catif` claim.
 
-
 ## Token store plugins
 
 To enable token usage count the HTTP validators requires a way to store the token id:s that has been used. The following types of stores are supported today.
