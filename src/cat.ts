@@ -13,6 +13,7 @@ import {
 import { CatValidationOptions } from '.';
 import { CommonAccessTokenUri } from './catu';
 import { CommonAccessTokenRenewal } from './catr';
+import { CommonAccessTokenHeader } from './cath';
 
 const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -85,7 +86,24 @@ const claimTypeValidators: {
   exp: (value) => typeof value === 'number',
   aud: (value) => typeof value === 'string' || Array.isArray(value),
   nbf: (value) => typeof value === 'number',
-  cattpk: (value) => typeof value === 'object'
+  cti: (value) => Buffer.isBuffer(value),
+  catreplay: (value) => typeof value === 'number',
+  catpor: (value) => Array.isArray(value),
+  catv: (value) => typeof value === 'number' && value >= 1,
+  catnip: (value) => typeof value === 'number' || typeof value === 'string',
+  catu: (value) => value instanceof Map,
+  catm: (value) => Array.isArray(value),
+  cath: (value) => value instanceof Map,
+  catgeoiso3166: (value) => Array.isArray(value),
+  catgeocoord: (value) => Array.isArray(value),
+  cattpk: (value) => Buffer.isBuffer(value),
+  sub: (value) => typeof value === 'string',
+  iat: (value) => typeof value === 'number',
+  catifdata: (value) => typeof value === 'string' || Array.isArray(value),
+  cnf: (value) => value instanceof Map,
+  catdpop: (value) => value instanceof Map,
+  catif: (value) => value instanceof Map,
+  catr: (value) => value instanceof Map
 };
 
 const isHex = (value: string) => /^[0-9a-fA-F]+$/.test(value);
@@ -101,7 +119,7 @@ const claimTypeDictValidators: {
   cti: (value) => typeof value === 'string' && isHex(value),
   catreplay: (value) => typeof value === 'number' && value >= 0,
   catpor: (value) => Array.isArray(value),
-  catv: (value) => typeof value === 'number' && value >= 0,
+  catv: (value) => typeof value === 'number' && value >= 1,
   catnip: (value) =>
     typeof value === 'number' ||
     (typeof value === 'string' && isNetworkIp(value)),
@@ -127,7 +145,7 @@ const CWT_TAG = 61;
  * Common Access Token Claims
  */
 export type CommonAccessTokenClaims = {
-  [key: string]: string | number | Map<number, any>;
+  [key: string]: string | number | Map<number | string, any>;
 };
 export type CommonAccessTokenDict = {
   [key: string]: string | number | { [key: string]: any };
@@ -136,7 +154,7 @@ export type CommonAccessTokenValue =
   | string
   | number
   | Buffer
-  | Map<number, any>;
+  | Map<number | string, any>;
 
 /**
  * CWT Encryption Key
@@ -215,6 +233,13 @@ function updateMapFromDict(
       claims[key] = CommonAccessTokenRenewal.fromDict(
         dict[param] as { [key: string]: any }
       ).payload;
+    } else if (param == 'cath') {
+      claims[key] = CommonAccessTokenHeader.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
+    } else if (param == 'catif') {
+      // TODO: Implement CATIF
+      claims[key] = new Map();
     } else {
       const value = claimTransform[param]
         ? claimTransform[param](dict[param] as string)
@@ -441,6 +466,10 @@ export class CommonAccessToken {
       } else if (key === 'catr') {
         result[key] = CommonAccessTokenRenewal.fromMap(
           value as Map<number, any>
+        ).toDict();
+      } else if (key === 'cath') {
+        result[key] = CommonAccessTokenHeader.fromMap(
+          value as Map<string, any>
         ).toDict();
       } else {
         const theValue = claimTransformReverse[key]

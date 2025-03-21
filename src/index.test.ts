@@ -76,7 +76,7 @@ describe('CAT', () => {
       catm: ['GET'],
       cath: {
         'User-Agent': {
-          contains: 'Mozilla'
+          'contains-match': 'Mozilla'
         }
       },
       catgeoiso3166: ['SE'],

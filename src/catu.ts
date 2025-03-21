@@ -1,13 +1,11 @@
-import crypto from 'crypto';
 import { InvalidCatuError } from './errors';
-
-const base16 = {
-  encode(bytes: Uint8Array): string {
-    return Array.from(bytes)
-      .map((byte) => byte.toString(16).padStart(2, '0'))
-      .join('');
-  }
-};
+import {
+  labelsToMatch,
+  match,
+  matchToLabels,
+  MatchType,
+  MatchValue
+} from './cattypes/match';
 
 type UriPart =
   | 'scheme'
@@ -44,35 +42,6 @@ const labelsToUriPart: { [key: number]: UriPart } = {
   8: 'extension'
 };
 
-type MatchType =
-  | 'exact-match'
-  | 'prefix-match'
-  | 'suffix-match'
-  | 'contains-match'
-  | 'regex-match'
-  | 'sha256-match'
-  | 'sha512-256-match';
-
-const matchToLabels: { [key: string]: number } = {
-  'exact-match': 0,
-  'prefix-match': 1,
-  'suffix-match': 2,
-  'contains-match': 3,
-  'regex-match': 4,
-  'sha256-match': -1,
-  'sha512-256-match': -2
-};
-
-const labelsToMatch: { [key: number]: MatchType } = {
-  0: 'exact-match',
-  1: 'prefix-match',
-  2: 'suffix-match',
-  3: 'contains-match',
-  4: 'regex-match',
-  '-1': 'sha256-match',
-  '-2': 'sha512-256-match'
-};
-
 type UriPartMap = Map<number, string | string[]>;
 export type CommonAccessTokenUriMap = Map<number, UriPartMap>;
 
@@ -82,7 +51,7 @@ export class CommonAccessTokenUri {
   public static fromDict(dict: { [key: string]: any }) {
     const catu = new CommonAccessTokenUri();
     for (const uriPart in dict) {
-      const matchMap = new Map();
+      const matchMap = new Map<number, MatchValue>();
       for (const match in dict[uriPart]) {
         matchMap.set(matchToLabels[match], dict[uriPart][match]);
       }
@@ -102,58 +71,10 @@ export class CommonAccessTokenUri {
     matchType: MatchType,
     matchValue: string | string[]
   ) {
-    switch (matchType) {
-      case 'exact-match':
-        if (Array.isArray(matchValue)) {
-          throw new InvalidCatuError('Exact match cannot be an array');
-        }
-        return value === matchValue;
-      case 'prefix-match':
-        if (Array.isArray(matchValue)) {
-          throw new InvalidCatuError('Prefix match cannot be an array');
-        }
-        return value.startsWith(matchValue);
-      case 'suffix-match':
-        if (Array.isArray(matchValue)) {
-          throw new InvalidCatuError('Suffix match cannot be an array');
-        }
-        return value.endsWith(matchValue);
-      case 'contains-match':
-        if (Array.isArray(matchValue)) {
-          throw new InvalidCatuError('Contains match cannot be an array');
-        }
-        return value.includes(matchValue);
-      case 'regex-match': {
-        if (!Array.isArray(matchValue)) {
-          throw new InvalidCatuError('Regex match must be an array');
-        }
-        const regex = new RegExp(matchValue[0], matchValue[1]);
-        return regex.test(value);
-      }
-      case 'sha256-match': {
-        if (Array.isArray(matchValue)) {
-          throw new InvalidCatuError('SHA256 match cannot be an array');
-        }
-        const encoded = await crypto.subtle.digest(
-          'SHA-256',
-          new TextEncoder().encode(value)
-        );
-        const encHex = base16.encode(new Uint8Array(encoded));
-        return encHex === matchValue;
-      }
-      case 'sha512-256-match': {
-        if (Array.isArray(matchValue)) {
-          throw new InvalidCatuError('SHA512-256 match cannot be an array');
-        }
-        const encoded512 = await crypto.subtle.digest(
-          'SHA-512',
-          new TextEncoder().encode(value)
-        );
-        const encHex512 = base16.encode(new Uint8Array(encoded512));
-        return encHex512 === matchValue;
-      }
-      default:
-        throw new InvalidCatuError(`Unsupported match type: ${matchType}`);
+    try {
+      return await match(value, matchType, matchValue);
+    } catch (err) {
+      throw new InvalidCatuError((err as Error).message);
     }
   }
 
