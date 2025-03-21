@@ -2,6 +2,7 @@ import { IncomingMessage, OutgoingMessage } from 'node:http';
 import { CAT, CommonAccessToken } from '..';
 import {
   InvalidAudienceError,
+  InvalidCatIfError,
   InvalidIssuerError,
   InvalidReuseDetected,
   KeyNotFoundError,
@@ -356,7 +357,25 @@ export class HttpValidator {
             if (!Array.isArray(value[header])) {
               response.setHeader(header, value[header] as string);
             } else {
-              throw new Error('generate new claim in catif not supported yet');
+              const newCatDict = value[header][1] as CommonAccessTokenDict;
+              if (!newCatDict['iss']) {
+                newCatDict['iss'] = this.opts.issuer;
+              }
+              if (!newCatDict['iat']) {
+                newCatDict['iat'] = Math.floor(Date.now() / 1000);
+              }
+              const newCat = CommonAccessTokenFactory.fromDict(newCatDict);
+              if (!keyid) {
+                throw new InvalidCatIfError('Missing key id in catif claim');
+              }
+              await newCat.mac(
+                { kid: keyid, k: this.keys[keyid] },
+                this.opts.alg || 'HS256',
+                { addCwtTag: true }
+              );
+              const newToken = newCat.raw?.toString('base64');
+              const newUrl = new URL(value[header][0] + newToken);
+              response.setHeader(header, newUrl.toString());
             }
           }
         }
