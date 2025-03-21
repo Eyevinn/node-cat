@@ -1,6 +1,6 @@
 {
   "name": "@eyevinn/cat",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Node library for generating and validating Common Access Tokens (CTA-5007)",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
