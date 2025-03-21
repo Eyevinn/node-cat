@@ -14,8 +14,9 @@ import { CatValidationOptions } from '.';
 import { CommonAccessTokenUri } from './catu';
 import { CommonAccessTokenRenewal } from './catr';
 import { CommonAccessTokenHeader } from './cath';
+import { CommonAccessTokenIf } from './catif';
 
-const claimsToLabels: { [key: string]: number } = {
+export const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
   sub: 2, // 3
   aud: 3, // 3
@@ -42,7 +43,7 @@ const claimsToLabels: { [key: string]: number } = {
   catr: 323
 };
 
-const labelsToClaim: { [key: number]: string } = {
+export const labelsToClaim: { [key: number]: string } = {
   1: 'iss',
   2: 'sub',
   3: 'aud',
@@ -238,8 +239,9 @@ function updateMapFromDict(
         dict[param] as { [key: string]: any }
       ).payload;
     } else if (param == 'catif') {
-      // TODO: Implement CATIF
-      claims[key] = new Map();
+      claims[key] = CommonAccessTokenIf.fromDict(
+        dict[param] as { [key: string]: any }
+      ).payload;
     } else {
       const value = claimTransform[param]
         ? claimTransform[param](dict[param] as string)
@@ -470,6 +472,10 @@ export class CommonAccessToken {
       } else if (key === 'cath') {
         result[key] = CommonAccessTokenHeader.fromMap(
           value as Map<string, any>
+        ).toDict();
+      } else if (key === 'catif') {
+        result[key] = CommonAccessTokenIf.fromMap(
+          value as Map<number, any>
         ).toDict();
       } else {
         const theValue = claimTransformReverse[key]
