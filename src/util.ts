@@ -1,5 +1,3 @@
-import crypto from 'crypto';
-
 /**
  * Generate a random hex string of specified length
  * @param bytes Number of random bytes to generate
@@ -7,7 +5,9 @@ import crypto from 'crypto';
  */
 export function generateRandomHex(bytes: number): string {
   const randomBytes = new Uint8Array(bytes);
-  crypto.getRandomValues(randomBytes);
+  for (let i = 0; i < bytes; i++) {
+    randomBytes[i] = Math.floor(Math.random() * 256);
+  }
   return Array.from(randomBytes)
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
