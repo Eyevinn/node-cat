@@ -15,6 +15,7 @@ import { CommonAccessTokenUri } from './catu';
 import { CommonAccessTokenRenewal } from './catr';
 import { CommonAccessTokenHeader } from './cath';
 import { CommonAccessTokenIf } from './catif';
+import { toBase64, toHex } from './util';
 
 export const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -76,8 +77,8 @@ const claimTransform: { [key: string]: (value: string) => Buffer } = {
 };
 
 const claimTransformReverse: { [key: string]: (value: Buffer) => string } = {
-  cti: (value: Buffer) => value.toString('hex'),
-  cattpk: (value: Buffer) => value.toString('hex')
+  cti: (value: Buffer) => toHex(value),
+  cattpk: (value: Buffer) => toHex(value)
 };
 
 const claimTypeValidators: {
@@ -492,7 +493,7 @@ export class CommonAccessToken {
   }
 
   get base64() {
-    return this.data?.toString('base64');
+    return this.data ? toBase64(this.data) : undefined;
   }
 
   get keyId() {
