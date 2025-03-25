@@ -5,6 +5,7 @@ import {
   CommonAccessTokenFactory
 } from './cat';
 import { KeyNotFoundError } from './errors';
+import { generateRandomHex, toBase64 } from './util';
 
 export { CommonAccessToken } from './cat';
 export { CommonAccessTokenRenewal } from './catr';
@@ -225,7 +226,7 @@ export class CAT {
     opts?: CatGenerateOptions
   ) {
     if (opts?.generateCwtId) {
-      claims['cti'] = crypto.randomBytes(16).toString('hex');
+      claims['cti'] = generateRandomHex(16);
     }
     const cat = new CommonAccessToken(claims);
     if (opts && opts.type == 'mac') {
@@ -239,7 +240,7 @@ export class CAT {
       if (!cat.raw) {
         throw new Error('Failed to MAC token');
       }
-      return cat.raw.toString('base64');
+      return toBase64(cat.raw);
     }
   }
 
@@ -281,7 +282,7 @@ export class CAT {
     opts?: CatGenerateOptions
   ) {
     if (opts?.generateCwtId) {
-      dict['cti'] = crypto.randomBytes(16).toString('hex');
+      dict['cti'] = generateRandomHex(16);
     }
     const cat = CommonAccessTokenFactory.fromDict(dict);
     if (opts && opts.type == 'mac') {
@@ -295,7 +296,7 @@ export class CAT {
       if (!cat.raw) {
         throw new Error('Failed to MAC token');
       }
-      return cat.raw.toString('base64');
+      return toBase64(cat.raw);
     }
   }
 
@@ -313,7 +314,7 @@ export class CAT {
     opts: CatRenewOptions
   ): Promise<string> {
     const newClaims = cat.claims;
-    newClaims['cti'] = crypto.randomBytes(16).toString('hex');
+    newClaims['cti'] = generateRandomHex(16);
     newClaims['iat'] = Math.floor(Date.now() / 1000);
     newClaims['iss'] = opts.issuer;
     newClaims['exp'] = newClaims['iat'] + (newClaims['catr'] as any)['expadd'];
@@ -329,6 +330,6 @@ export class CAT {
     if (!newCat.raw) {
       throw new Error('Failed to MAC token');
     }
-    return newCat.raw.toString('base64');
+    return toBase64(newCat.raw);
   }
 }
