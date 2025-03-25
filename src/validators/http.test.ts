@@ -496,10 +496,11 @@ describe('HTTP Request CAT Validator with auto renew', () => {
   });
 
   test('can generate new cat claims based on catif directives', async () => {
+    const cti = generateRandomHex(16);
     const json = {
       iss: 'eyevinn',
       exp: Math.floor(Date.now() / 1000) - 60,
-      cti: generateRandomHex(16),
+      cti,
       catif: {
         exp: [
           307,
@@ -563,6 +564,7 @@ describe('HTTP Request CAT Validator with auto renew', () => {
       issuer: 'eyevinn'
     });
     expect(result2.cat?.claims.iat).toBeDefined();
+    expect(result2.cat?.claims.cti).not.toEqual(cti);
   });
 
   test.skip('can handle autorenew of type redirect', async () => {
