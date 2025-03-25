@@ -314,6 +314,21 @@ export class HttpValidator {
         ? request.headers[headerName]![0]
         : (request.headers[headerName] as string);
       catrType = 'header';
+    } else if (request.headers['cookie']) {
+      const cookies = !Array.isArray(request.headers['cookie'])
+        ? [request.headers['cookie'] as string]
+        : (request.headers['cookie'] as string[]);
+      for (const cookie of cookies) {
+        const parts = cookie.split(';')[0].match(/(.*?)=(.*)$/);
+        if (parts) {
+          const [name, value] = parts.slice(1);
+          if (name.toLowerCase() === 'cta-common-access-token') {
+            token = value;
+            catrType = 'cookie';
+            break;
+          }
+        }
+      }
     } else if (url && url.searchParams.has(this.tokenUriParam)) {
       token = url.searchParams.get(this.tokenUriParam) || undefined;
       catrType = 'query';
