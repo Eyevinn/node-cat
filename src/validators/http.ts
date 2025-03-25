@@ -389,7 +389,8 @@ export class HttpValidator {
                 { addCwtTag: true }
               );
               const newToken = newCat.raw?.toString('base64');
-              const newUrl = new URL(value[header][0] + newToken);
+              const encodedToken = encodeURIComponent(newToken!);
+              const newUrl = new URL(value[header][0] + encodedToken);
               response.setHeader(header, newUrl.toString());
             }
           }
