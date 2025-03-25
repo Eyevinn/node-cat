@@ -8,6 +8,7 @@ import {
   MemoryCTIStore
 } from '..';
 import { CommonAccessTokenRenewal } from '../catr';
+import { generateRandomHex } from '../util';
 
 describe('HTTP Request CAT Validator', () => {
   test('fail to validate token in CTA-Common-Access-Token header with wrong signature', async () => {
@@ -453,7 +454,7 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     const json = {
       iss: 'eyevinn',
       exp: Math.floor(Date.now() / 1000) - 60,
-      cti: 'foobar',
+      cti: generateRandomHex(16),
       catif: {
         exp: [
           307,
@@ -498,7 +499,7 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     const json = {
       iss: 'eyevinn',
       exp: Math.floor(Date.now() / 1000) - 60,
-      cti: 'foobar',
+      cti: generateRandomHex(16),
       catif: {
         exp: [
           307,

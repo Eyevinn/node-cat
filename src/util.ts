@@ -1,4 +1,4 @@
-import { webcrypto } from 'crypto';
+import crypto from 'crypto';
 
 /**
  * Generate a random hex string of specified length
@@ -7,7 +7,7 @@ import { webcrypto } from 'crypto';
  */
 export function generateRandomHex(bytes: number): string {
   const randomBytes = new Uint8Array(bytes);
-  webcrypto.getRandomValues(randomBytes);
+  crypto.getRandomValues(randomBytes);
   return Array.from(randomBytes)
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');

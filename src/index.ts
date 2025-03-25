@@ -225,7 +225,7 @@ export class CAT {
     claims: { [key: string]: string | number | Map<number, any> },
     opts?: CatGenerateOptions
   ) {
-    if (opts?.generateCwtId) {
+    if (opts?.generateCwtId && !claims['cti']) {
       claims['cti'] = generateRandomHex(16);
     }
     const cat = new CommonAccessToken(claims);
@@ -281,7 +281,7 @@ export class CAT {
      */
     opts?: CatGenerateOptions
   ) {
-    if (opts?.generateCwtId) {
+    if (opts?.generateCwtId && !dict['cti']) {
       dict['cti'] = generateRandomHex(16);
     }
     const cat = CommonAccessTokenFactory.fromDict(dict);

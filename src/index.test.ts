@@ -485,6 +485,27 @@ describe('CAT claims', () => {
     expect(result.cat!.cti).toBeDefined();
   });
 
+  test('should only auto generate a CWT Id claim if not specified', async () => {
+    const base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        cti: 'a47019af6305d3652a918ae356cc2ca2'
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.cti).toEqual('a47019af6305d3652a918ae356cc2ca2');
+  });
+
   test('can renew a token', async () => {
     const now = Math.floor(Date.now() / 1000);
     const base64encoded = await generator.generate(
