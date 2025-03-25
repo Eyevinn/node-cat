@@ -626,6 +626,49 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     expect(result.cfResponse.headers['cta-common-access-token']).toBeDefined();
   });
 
+  test('cloudfront request with token as cookie', async () => {
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const result = await httpValidator.validateCloudFrontRequest({
+      clientIp: 'dummy',
+      method: 'GET',
+      uri: '/content/path/file.m3u8',
+      querystring: '',
+      headers: {
+        cookie: [
+          {
+            value: `CTA-Common-Access-Token=${base64encoded!}; Path=/; Secure; HttpOnly`
+          }
+        ],
+        host: [
+          {
+            key: 'Host',
+            value: 'example.com'
+          }
+        ]
+      }
+    });
+    expect(result.status).toBe(200);
+    expect(
+      result.cfResponse.headers['cta-common-access-token']
+    ).not.toBeDefined();
+    expect(
+      result.cfResponse.headers['set-cookie'][0].value.includes(
+        'cta-common-access-token'
+      )
+    ).toBeTruthy();
+  });
+
   test('cloudfront request with autorenew where token has not expired', async () => {
     base64encoded = await generator.generate(
       {
