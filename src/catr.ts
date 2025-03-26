@@ -51,6 +51,19 @@ export type CommonAccessTokenRenewalMap = Map<number, CatrPartValue>;
 export class CommonAccessTokenRenewal {
   private catrMap: CommonAccessTokenRenewalMap = new Map();
 
+  public static fromDictTags(dict: { [key: number]: any }) {
+    const newDict: { [key: string]: any } = {};
+    for (const key in dict) {
+      const tag = parseInt(key);
+      if (labelsToCatrPart[tag] === 'type') {
+        newDict[labelsToCatrPart[tag]] = labelsToCatrRenewalType[dict[key]];
+      } else {
+        newDict[labelsToCatrPart[tag]] = dict[key];
+      }
+    }
+    return CommonAccessTokenRenewal.fromDict(newDict);
+  }
+
   public static fromDict(dict: { [key: string]: any }) {
     const catr = new CommonAccessTokenRenewal();
     for (const catrPart in dict) {
