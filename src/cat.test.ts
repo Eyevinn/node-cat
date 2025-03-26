@@ -32,7 +32,7 @@ describe('CAT', () => {
       ),
       kid: 'Symmetric256'
     };
-    await cat.mac(key, 'HS256', { addCwtTag: true });
+    await cat.mac(key, 'HS256');
     expect(cat.raw).toBeDefined();
     const macHex = cat.raw?.toString('hex');
     const token = Buffer.from(macHex!, 'hex');
