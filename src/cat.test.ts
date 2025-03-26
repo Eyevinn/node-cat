@@ -74,7 +74,8 @@ describe('CAT', () => {
       kid: 'AsymmetricECDSA256'
     };
     await cat.verify(token, verifyKey);
-    expect(cat.claims).toEqual(claims);
+    const claimsWithCatv = { ...claims, catv: 1 };
+    expect(cat.claims).toEqual(claimsWithCatv);
   });
 
   test('can create a CAT object from a signed base64 encoded token', async () => {
