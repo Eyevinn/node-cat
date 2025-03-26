@@ -157,7 +157,10 @@ describe('CAT', () => {
       cti: '0b71',
       catr: {
         type: 'header',
-        'header-name': 'cta-common-access-token'
+        'header-name': 'cta-common-access-token',
+        'header-params': ['value1'],
+        'cookie-name': 'myname',
+        'cookie-params': ['cookievalue']
       }
     });
     expect(cat.claims).toEqual({
@@ -170,7 +173,10 @@ describe('CAT', () => {
       cti: '0b71',
       catr: {
         type: 'header',
-        'header-name': 'cta-common-access-token'
+        'header-name': 'cta-common-access-token',
+        'header-params': ['value1'],
+        'cookie-name': 'myname',
+        'cookie-params': ['cookievalue']
       },
       catv: 1
     });
