@@ -20,6 +20,7 @@ import { CommonAccessTokenDict, CommonAccessTokenFactory } from '../cat';
 import { ICTIStore } from '../stores/interface';
 import { ITokenLogger } from '../loggers/interface';
 import { CatIfDictValue } from '../catif';
+import { toBase64NoPadding } from '../util';
 
 interface HttpValidatorKey {
   kid: string;
@@ -388,7 +389,7 @@ export class HttpValidator {
                 this.opts.alg || 'HS256',
                 { addCwtTag: true }
               );
-              const newToken = newCat.raw?.toString('base64');
+              const newToken = toBase64NoPadding(newCat.raw!);
               const encodedToken = encodeURIComponent(newToken!);
               const newUrl = new URL(value[header][0] + encodedToken);
               response.setHeader(header, newUrl.toString());
