@@ -24,3 +24,13 @@ export function toHex(input: Buffer): string {
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
 }
+
+/**
+ * Convert a buffer to base64 string without padding
+ * @param input Buffer to convert
+ * @returns Base64 string without padding
+ */
+export function toBase64NoPadding(input: Buffer): string {
+  const base64 = toBase64(input);
+  return base64.replace(/=+$/, '');
+}
