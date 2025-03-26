@@ -12,7 +12,7 @@ async function main() {
   const result = await parser.validate(process.argv[2], 'mac', {
     issuer: 'eyevinn'
   });
-  console.log(result);
+  console.dir(result, { depth: null });
 }
 
 main();

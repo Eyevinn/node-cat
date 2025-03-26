@@ -10,6 +10,19 @@ export type CommonAccessTokenHeaderMap = Map<string, MatchMap>;
 export class CommonAccessTokenHeader {
   private cathMap: CommonAccessTokenHeaderMap = new Map();
 
+  public static fromDictTags(dict: { [key: number]: any }) {
+    const newDict: { [key: string]: any } = {};
+    for (const headerTag in dict) {
+      const matchDict: { [key: string]: any } = {};
+      for (const matchTag in dict[headerTag]) {
+        const tag = parseInt(matchTag);
+        matchDict[labelsToMatch[tag]] = dict[headerTag][matchTag];
+      }
+      newDict[labelsToMatch[parseInt(headerTag)]] = matchDict;
+    }
+    return CommonAccessTokenHeader.fromDict(newDict);
+  }
+
   public static fromDict(dict: { [key: string]: any }) {
     const cath = new CommonAccessTokenHeader();
     for (const header in dict) {

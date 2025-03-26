@@ -48,6 +48,19 @@ export type CommonAccessTokenUriMap = Map<number, UriPartMap>;
 export class CommonAccessTokenUri {
   private catuMap: CommonAccessTokenUriMap = new Map();
 
+  public static fromDictTags(dict: { [key: number]: any }) {
+    const newDict: { [key: string]: any } = {};
+    for (const uriPartTag in dict) {
+      const matchDict: { [key: string]: any } = {};
+      for (const matchTag in dict[uriPartTag]) {
+        const tag = parseInt(matchTag);
+        matchDict[labelsToMatch[tag]] = dict[uriPartTag][matchTag];
+      }
+      newDict[labelsToUriPart[parseInt(uriPartTag)]] = matchDict;
+    }
+    return CommonAccessTokenUri.fromDict(newDict);
+  }
+
   public static fromDict(dict: { [key: string]: any }) {
     const catu = new CommonAccessTokenUri();
     for (const uriPart in dict) {

@@ -183,6 +183,38 @@ describe('CAT', () => {
     });
   });
 
+  test('can create a CAT object from a dict with tags', async () => {
+    const cat = new CommonAccessToken({
+      1: 'eyevinn',
+      2: 'jonas',
+      3: 'coap://light.example.com',
+      4: 1444064944,
+      5: 1443944944,
+      6: 1443944944,
+      323: {
+        0: 1,
+        1: 60,
+        2: 10,
+        5: ['Secure', 'HttpOnly', 'Domain=.streaming.a2d.tv']
+      } as any
+    });
+    expect(cat.claims).toEqual({
+      iss: 'eyevinn',
+      sub: 'jonas',
+      aud: 'coap://light.example.com',
+      exp: 1444064944,
+      nbf: 1443944944,
+      iat: 1443944944,
+      catr: {
+        type: 'cookie',
+        expadd: 60,
+        deadline: 10,
+        'cookie-params': ['Secure', 'HttpOnly', 'Domain=.streaming.a2d.tv']
+      },
+      catv: 1
+    });
+  });
+
   test('can determine whether the token should be renewed', async () => {
     const now = Math.floor(Date.now() / 1000);
     const cat = new CommonAccessToken({

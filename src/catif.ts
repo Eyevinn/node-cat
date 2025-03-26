@@ -14,6 +14,15 @@ export type CatIfDictValue = {
 export class CommonAccessTokenIf {
   private catIfMap: CommonAccessTokenIfMap = new Map();
 
+  public static fromDictTags(dict: { [key: number]: any }) {
+    const newDict: { [key: string]: any } = {};
+    for (const key in dict) {
+      const tag = parseInt(key);
+      newDict[labelsToClaim[tag]] = dict[key];
+    }
+    return CommonAccessTokenIf.fromDict(newDict);
+  }
+
   public static fromDict(dict: { [key: string]: any }) {
     const catif = new CommonAccessTokenIf();
     for (const catIfClaim in dict) {

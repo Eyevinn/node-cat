@@ -208,14 +208,17 @@ function updateMapFromClaims(
   for (const param in dict) {
     const key = claimsToLabels[param] ? claimsToLabels[param] : parseInt(param);
     if (key === claimsToLabels['catu'] && !(dict[param] instanceof Map)) {
-      map.set(key, CommonAccessTokenUri.fromDict(dict[param] as any).payload);
+      map.set(
+        key,
+        CommonAccessTokenUri.fromDictTags(dict[param] as any).payload
+      );
     } else if (
       key === claimsToLabels['catr'] &&
       !(dict[param] instanceof Map)
     ) {
       map.set(
         key,
-        CommonAccessTokenRenewal.fromDict(dict[param] as any).payload
+        CommonAccessTokenRenewal.fromDictTags(dict[param] as any).payload
       );
     } else if (
       key === claimsToLabels['cath'] &&
@@ -223,13 +226,16 @@ function updateMapFromClaims(
     ) {
       map.set(
         key,
-        CommonAccessTokenHeader.fromDict(dict[param] as any).payload
+        CommonAccessTokenHeader.fromDictTags(dict[param] as any).payload
       );
     } else if (
       key === claimsToLabels['catif'] &&
       !(dict[param] instanceof Map)
     ) {
-      map.set(key, CommonAccessTokenIf.fromDict(dict[param] as any).payload);
+      map.set(
+        key,
+        CommonAccessTokenIf.fromDictTags(dict[param] as any).payload
+      );
     } else {
       const value = claimTransform[param]
         ? claimTransform[param](dict[param] as string)
