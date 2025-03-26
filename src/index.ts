@@ -4,7 +4,7 @@ import {
   CommonAccessTokenFactory
 } from './cat';
 import { KeyNotFoundError } from './errors';
-import { generateRandomHex, toBase64 } from './util';
+import { generateRandomHex, toBase64NoPadding } from './util';
 
 export { CommonAccessToken } from './cat';
 export { CommonAccessTokenRenewal } from './catr';
@@ -239,7 +239,7 @@ export class CAT {
       if (!cat.raw) {
         throw new Error('Failed to MAC token');
       }
-      return toBase64(cat.raw);
+      return toBase64NoPadding(cat.raw);
     }
   }
 
@@ -295,7 +295,7 @@ export class CAT {
       if (!cat.raw) {
         throw new Error('Failed to MAC token');
       }
-      return toBase64(cat.raw);
+      return toBase64NoPadding(cat.raw);
     }
   }
 
@@ -329,6 +329,6 @@ export class CAT {
     if (!newCat.raw) {
       throw new Error('Failed to MAC token');
     }
-    return toBase64(newCat.raw);
+    return toBase64NoPadding(newCat.raw);
   }
 }

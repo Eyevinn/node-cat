@@ -183,6 +183,53 @@ describe('CAT', () => {
     });
   });
 
+  test('can generate a token with no padding', async () => {
+    const generator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        exp: 1742984408,
+        iat: 1742980808,
+        cti: '66400ca63ab2c267cc0d874cc5f9a378',
+        catv: 1
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    console.log(base64encoded);
+    expect(base64encoded).not.toContain('=');
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      }
+    });
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'eyevinn'
+    });
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims).toEqual({
+      iss: 'eyevinn',
+      exp: 1742984408,
+      iat: 1742980808,
+      cti: '66400ca63ab2c267cc0d874cc5f9a378',
+      catv: 1
+    });
+  });
+
   test('can validate a MAC:ed token with standard claims', async () => {
     const base64encoded =
       '0YRDoQEFoQRMU3ltbWV0cmljMjU2eDZkOTAxMDNhMTAxNzU2MzZmNjE3MDNhMmYyZjYxNzMyZTY1Nzg2MTZkNzA2YzY1MmU2MzZmNmRYIDL8dIteq8pMXXX9oL4eo2NX1kQUaselV6p/JHSEVXWX';
