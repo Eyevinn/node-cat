@@ -192,10 +192,11 @@ describe('CAT', () => {
         )
       }
     });
+    const exp = Math.floor(Date.now() / 1000) + 60;
     const base64encoded = await generator.generateFromJson(
       {
         iss: 'eyevinn',
-        exp: 1742984408,
+        exp,
         iat: 1742980808,
         cti: '66400ca63ab2c267cc0d874cc5f9a378',
         catv: 1
@@ -206,7 +207,6 @@ describe('CAT', () => {
         kid: 'Symmetric256'
       }
     );
-    console.log(base64encoded);
     expect(base64encoded).not.toContain('=');
     const validator = new CAT({
       keys: {
@@ -223,7 +223,7 @@ describe('CAT', () => {
     expect(result.cat).toBeDefined();
     expect(result.cat!.claims).toEqual({
       iss: 'eyevinn',
-      exp: 1742984408,
+      exp,
       iat: 1742980808,
       cti: '66400ca63ab2c267cc0d874cc5f9a378',
       catv: 1

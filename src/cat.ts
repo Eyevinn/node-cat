@@ -207,10 +207,35 @@ function updateMapFromClaims(
   }
   for (const param in dict) {
     const key = claimsToLabels[param] ? claimsToLabels[param] : parseInt(param);
-    const value = claimTransform[param]
-      ? claimTransform[param](dict[param] as string)
-      : dict[param];
-    map.set(key, value);
+    if (key === claimsToLabels['catu'] && !(dict[param] instanceof Map)) {
+      map.set(key, CommonAccessTokenUri.fromDict(dict[param] as any).payload);
+    } else if (
+      key === claimsToLabels['catr'] &&
+      !(dict[param] instanceof Map)
+    ) {
+      map.set(
+        key,
+        CommonAccessTokenRenewal.fromDict(dict[param] as any).payload
+      );
+    } else if (
+      key === claimsToLabels['cath'] &&
+      !(dict[param] instanceof Map)
+    ) {
+      map.set(
+        key,
+        CommonAccessTokenHeader.fromDict(dict[param] as any).payload
+      );
+    } else if (
+      key === claimsToLabels['catif'] &&
+      !(dict[param] instanceof Map)
+    ) {
+      map.set(key, CommonAccessTokenIf.fromDict(dict[param] as any).payload);
+    } else {
+      const value = claimTransform[param]
+        ? claimTransform[param](dict[param] as string)
+        : dict[param];
+      map.set(key, value);
+    }
   }
   return map;
 }
@@ -262,10 +287,10 @@ export class CommonAccessToken {
   private kid?: string;
 
   constructor(claims: CommonAccessTokenClaims) {
-    if (!claims['catv']) {
-      claims['catv'] = 1;
-    }
     this.payload = updateMapFromClaims(claims);
+    if (!this.payload.has(claimsToLabels['catv'])) {
+      this.payload.set(claimsToLabels['catv'], 1);
+    }
     this.validateTypes();
   }
 
