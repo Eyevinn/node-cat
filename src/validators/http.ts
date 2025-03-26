@@ -386,8 +386,7 @@ export class HttpValidator {
               }
               await newCat.mac(
                 { kid: keyid, k: this.keys[keyid] },
-                this.opts.alg || 'HS256',
-                { addCwtTag: true }
+                this.opts.alg || 'HS256'
               );
               const newToken = toBase64NoPadding(newCat.raw!);
               const encodedToken = encodeURIComponent(newToken!);

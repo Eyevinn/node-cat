@@ -7,8 +7,7 @@ async function main() {
         '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
         'hex'
       )
-    },
-    expectCwtTag: true
+    }
   });
   const base64encoded = await generator.generate(
     {

@@ -234,7 +234,7 @@ export class CAT {
         throw new Error('Key not found');
       }
       await cat.mac({ k: key, kid: opts.kid }, opts.alg, {
-        addCwtTag: this.expectCwtTag
+        noCwtTag: !this.expectCwtTag
       });
       if (!cat.raw) {
         throw new Error('Failed to MAC token');
@@ -290,7 +290,7 @@ export class CAT {
         throw new Error('Key not found');
       }
       await cat.mac({ k: key, kid: opts.kid }, opts.alg, {
-        addCwtTag: this.expectCwtTag
+        noCwtTag: !this.expectCwtTag
       });
       if (!cat.raw) {
         throw new Error('Failed to MAC token');
@@ -324,7 +324,7 @@ export class CAT {
       throw new KeyNotFoundError();
     }
     await newCat.mac({ k: key, kid: opts.kid }, opts.alg, {
-      addCwtTag: this.expectCwtTag
+      noCwtTag: !this.expectCwtTag
     });
     if (!newCat.raw) {
       throw new Error('Failed to MAC token');

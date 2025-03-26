@@ -310,7 +310,7 @@ export class CommonAccessToken {
      * Options
      */
     opts?: {
-      addCwtTag: boolean;
+      noCwtTag: boolean;
     }
   ): Promise<void> {
     const headers = {
@@ -320,7 +320,7 @@ export class CommonAccessToken {
     const recipient = {
       key: key.k
     };
-    if (opts?.addCwtTag) {
+    if (!opts?.noCwtTag) {
       const plaintext = cbor.encode(this.payload);
       const coseMessage = await cose.mac.create(
         headers,
