@@ -72,7 +72,10 @@ export const labelsToClaim: { [key: number]: string } = {
 };
 
 const claimTransform: { [key: string]: (value: string) => Buffer } = {
-  cti: (value) => Buffer.from(value, 'hex'),
+  cti: (value: unknown) =>
+    value instanceof Uint8Array
+      ? Buffer.copyBytesFrom(value)
+      : Buffer.from(value as string, 'hex'),
   cattpk: (value) => Buffer.from(value, 'hex')
 };
 
@@ -237,8 +240,9 @@ function updateMapFromClaims(
         CommonAccessTokenIf.fromDictTags(dict[param] as any).payload
       );
     } else {
-      const value = claimTransform[param]
-        ? claimTransform[param](dict[param] as string)
+      const k = param.match(/\d+/) ? labelsToClaim[parseInt(param)] : param;
+      const value = claimTransform[k]
+        ? claimTransform[k](dict[param] as string)
         : dict[param];
       map.set(key, value);
     }
