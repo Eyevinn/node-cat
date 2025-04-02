@@ -9,6 +9,7 @@ import {
   TokenNotActiveError,
   UriNotAllowedError
 } from './errors';
+import { isBase64UrlEncoded } from './util';
 
 describe('CAT', () => {
   test('can generate a token and verify it', async () => {
@@ -30,6 +31,7 @@ describe('CAT', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const validator = new CAT({
       keys: {
         Symmetric256: Buffer.from(
@@ -114,6 +116,7 @@ describe('CAT', () => {
         )
       }
     });
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'coap://as.example.com'
     });
@@ -151,6 +154,7 @@ describe('CAT', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const validator = new CAT({
       keys: {
         Symmetric256: Buffer.from(
@@ -207,6 +211,7 @@ describe('CAT', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     expect(base64encoded).not.toContain('=');
     const validator = new CAT({
       keys: {
@@ -263,6 +268,7 @@ describe('CAT', () => {
       },
       expectCwtTag: true
     });
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded, 'mac', {
       issuer: 'coap://jonas.example.com'
     });
@@ -431,6 +437,7 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
@@ -450,6 +457,7 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
@@ -479,6 +487,7 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn',
       url: new URL('https://example.com/content/path/file.m3u8')
@@ -504,6 +513,7 @@ describe('CAT claims', () => {
         kid: 'Symmetric256'
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
@@ -524,6 +534,7 @@ describe('CAT claims', () => {
         generateCwtId: true
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
@@ -545,6 +556,7 @@ describe('CAT claims', () => {
         generateCwtId: true
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });
@@ -573,6 +585,7 @@ describe('CAT claims', () => {
         generateCwtId: true
       }
     );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
     const result = await validator.validate(base64encoded!, 'mac', {
       issuer: 'eyevinn'
     });

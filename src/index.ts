@@ -4,7 +4,7 @@ import {
   CommonAccessTokenFactory
 } from './cat';
 import { KeyNotFoundError } from './errors';
-import { generateRandomHex, toBase64NoPadding } from './util';
+import { fromBase64Url, generateRandomHex, toBase64NoPadding } from './util';
 
 export { CommonAccessToken } from './cat';
 export { CommonAccessTokenRenewal } from './catr';
@@ -159,7 +159,7 @@ export class CAT {
    */
   public async validate(
     /**
-     * The token to validate (base64 encoded)
+     * The token to validate (base64url encoded)
      */
     token: string,
     /**
@@ -171,7 +171,7 @@ export class CAT {
      */
     opts: CatValidationOptions
   ): Promise<CatValidationResult> {
-    const tokenWithoutPadding = token.trim();
+    const tokenWithoutPadding = fromBase64Url(token);
     let cat;
     if (type == 'mac') {
       if (!opts) {
