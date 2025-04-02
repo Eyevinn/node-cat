@@ -74,7 +74,7 @@ export const labelsToClaim: { [key: number]: string } = {
 const claimTransform: { [key: string]: (value: string) => Buffer } = {
   cti: (value: unknown) =>
     value instanceof Uint8Array
-      ? Buffer.copyBytesFrom(value)
+      ? Buffer.from(value)
       : Buffer.from(value as string, 'hex'),
   cattpk: (value) => Buffer.from(value, 'hex')
 };
