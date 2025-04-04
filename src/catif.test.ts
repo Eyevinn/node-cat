@@ -45,4 +45,25 @@ describe('Common Access Token If', () => {
       ]
     });
   });
+
+  test('can handle additional headers', async () => {
+    const basic = CommonAccessTokenIf.fromDict({
+      exp: [
+        307,
+        {
+          Location: 'https://auth.example.net/',
+          'x-custom-header': 'my-custom-header'
+        }
+      ]
+    });
+    expect(basic.toDict()).toEqual({
+      exp: [
+        307,
+        {
+          Location: 'https://auth.example.net/',
+          'x-custom-header': 'my-custom-header'
+        }
+      ]
+    });
+  });
 });
