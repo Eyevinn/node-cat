@@ -337,7 +337,8 @@ export class CommonAccessToken {
         plaintext as unknown as string,
         recipient
       );
-      const decoded = cbor.decode(coseMessage).value;
+      const decoder = new cbor.Decoder({ mapsAsObjects: false });
+      const decoded = decoder.decode(coseMessage).value;
       const coseTag = new cbor.Tag(decoded, 17);
       const cwtTag = new cbor.Tag(coseTag, CWT_TAG);
       this.data = cbor.encode(cwtTag);
@@ -358,18 +359,21 @@ export class CommonAccessToken {
       expectCwtTag: boolean;
     }
   ): Promise<void> {
-    const coseMessage = cbor.decode(token);
+    const decoder = new cbor.Decoder({ mapsAsObjects: false });
+    const coseMessage = decoder.decode(token);
     if (opts?.expectCwtTag && coseMessage.tag !== 61) {
       throw new Error('Expected CWT tag');
     }
     if (coseMessage.tag === CWT_TAG) {
       const cborCoseMessage = cbor.encode(coseMessage.value);
       const buf = await cose.mac.read(cborCoseMessage, key.k);
-      const json = await cbor.decode(buf);
+      const json = await decoder.decode(buf);
       this.payload = updateMapFromClaims(json);
     } else {
       const buf = await cose.mac.read(token, key.k);
-      this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
+      this.payload = await decoder.decode(
+        Buffer.from(buf.toString('hex'), 'hex')
+      );
     }
     this.kid = key.kid;
   }
