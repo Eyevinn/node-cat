@@ -10,6 +10,9 @@ export type CommonAccessTokenHeaderMap = Map<string, MatchMap>;
 export class CommonAccessTokenHeader {
   private cathMap: CommonAccessTokenHeaderMap = new Map();
 
+  /**
+   * Create a CATH claim from a dictionary with numbers as keys (labels)
+   */
   public static fromDictTags(dict: { [key: number]: any }) {
     const newDict: { [key: string]: any } = {};
     for (const headerTag in dict) {
@@ -23,6 +26,9 @@ export class CommonAccessTokenHeader {
     return CommonAccessTokenHeader.fromDict(newDict);
   }
 
+  /**
+   * Create a CATH claim from a dictionary with string as keys
+   */
   public static fromDict(dict: { [key: string]: any }) {
     const cath = new CommonAccessTokenHeader();
     for (const header in dict) {
@@ -35,6 +41,9 @@ export class CommonAccessTokenHeader {
     return cath;
   }
 
+  /**
+   * Create a CATH claim from a map with string as keys
+   */
   public static fromMap(map: CommonAccessTokenHeaderMap) {
     const cath = new CommonAccessTokenHeader();
     cath.cathMap = map;

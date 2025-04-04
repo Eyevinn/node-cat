@@ -15,7 +15,11 @@ export type CatIfDictValue = {
 const valueToDict: { [key: string]: (value: any) => any } = {
   exp: (value) => {
     const [code, headers, kid] = value;
-    return [code, valueToDict['location'](headers.get('Location')), kid];
+    const dictHeaders: { [h: string]: any } = {};
+    headers.forEach((v: any, header: string) => {
+      dictHeaders[header] = valueToDict[header] ? valueToDict[header](v) : v;
+    });
+    return [code, dictHeaders, kid];
   },
   location: (value) => {
     if (typeof value === 'string') {
@@ -35,13 +39,20 @@ const valueToDict: { [key: string]: (value: any) => any } = {
 const dictToValue: { [key: string]: (value: any) => any } = {
   exp: (value) => {
     const [code, headers, kid] = value;
-    return [code, dictToValue['location'](headers['Location']), kid];
+    const map = new Map<string, any>();
+    for (const header in headers) {
+      map.set(
+        header,
+        dictToValue[header]
+          ? dictToValue[header](headers[header])
+          : headers[header]
+      );
+    }
+    return [code, map, kid];
   },
   location: (value) => {
     if (typeof value === 'string') {
-      const map = new Map<string, any>();
-      map.set('Location', value);
-      return map;
+      return value;
     } else {
       const [url, dict] = value;
       const lmap = new Map<string, any>();
@@ -51,9 +62,7 @@ const dictToValue: { [key: string]: (value: any) => any } = {
           dictToValue[key] ? dictToValue[key](dict[key]) : dict[key]
         );
       }
-      const map = new Map<string, any>();
-      map.set('Location', [url, lmap]);
-      return map;
+      return [url, lmap];
     }
   },
   catu: (value) => CommonAccessTokenUri.fromDict(value).payload
