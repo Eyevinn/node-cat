@@ -48,6 +48,9 @@ export type CommonAccessTokenUriMap = Map<number, UriPartMap>;
 export class CommonAccessTokenUri {
   private catuMap: CommonAccessTokenUriMap = new Map();
 
+  /**
+   * Create a CATU claim from a dictionary with numbers as keys (labels)
+   */
   public static fromDictTags(dict: { [key: number]: any }) {
     const newDict: { [key: string]: any } = {};
     for (const uriPartTag in dict) {
@@ -61,6 +64,9 @@ export class CommonAccessTokenUri {
     return CommonAccessTokenUri.fromDict(newDict);
   }
 
+  /**
+   * Create a CATU claim from a dictionary with string as keys
+   */
   public static fromDict(dict: { [key: string]: any }) {
     const catu = new CommonAccessTokenUri();
     for (const uriPart in dict) {
@@ -73,6 +79,25 @@ export class CommonAccessTokenUri {
     return catu;
   }
 
+  /**
+   * Create a CATU claim from a map with string as keys
+   */
+  public static fromUnlabeledMap(unLabeledMap: Map<string, any>) {
+    const map: CommonAccessTokenUriMap = new Map();
+    unLabeledMap.forEach((value, uriPart) => {
+      const uriPartLabel = uriPartToLabels[uriPart];
+      const matchMap = new Map<number, MatchValue>();
+      value.forEach((v: any, matchPart: string) => {
+        matchMap.set(matchToLabels[matchPart], v);
+      });
+      map.set(uriPartLabel, matchMap);
+    });
+    return CommonAccessTokenUri.fromMap(map);
+  }
+
+  /**
+   * Create a CATU claim from a map with number as keys
+   */
   public static fromMap(map: CommonAccessTokenUriMap) {
     const catu = new CommonAccessTokenUri();
     catu.catuMap = map;
