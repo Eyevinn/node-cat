@@ -92,7 +92,21 @@ describe('CAT', () => {
         exp: [
           307,
           {
-            Location: 'https://auth.example.net'
+            Location: [
+              'https://auth.example.net?CAT=',
+              {
+                iss: null,
+                iat: null,
+                catu: {
+                  scheme: {
+                    'exact-match': 'https'
+                  },
+                  path: {
+                    'prefix-match': '/'
+                  }
+                }
+              }
+            ]
           }
         ]
       },
