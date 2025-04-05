@@ -66,4 +66,53 @@ describe('Common Access Token If', () => {
       ]
     });
   });
+
+  test('can handle catu in catif', async () => {
+    const withCatu = CommonAccessTokenIf.fromDict({
+      exp: [
+        307,
+        {
+          Location: [
+            'https://auth.example.net/?CAT=',
+            {
+              iss: null,
+              iat: null,
+              catu: {
+                scheme: {
+                  'exact-match': 'https'
+                },
+                path: {
+                  'prefix-match': '/'
+                }
+              }
+            }
+          ]
+        },
+        'abc123'
+      ]
+    });
+    expect(withCatu.toDict()).toEqual({
+      exp: [
+        307,
+        {
+          Location: [
+            'https://auth.example.net/?CAT=',
+            {
+              iss: null,
+              iat: null,
+              catu: {
+                scheme: {
+                  'exact-match': 'https'
+                },
+                path: {
+                  'prefix-match': '/'
+                }
+              }
+            }
+          ]
+        },
+        'abc123'
+      ]
+    });
+  });
 });
