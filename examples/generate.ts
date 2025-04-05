@@ -9,19 +9,28 @@ async function main() {
       )
     }
   });
-  const base64encoded = await generator.generate(
+  const base64encoded = await generator.generateFromJson(
     {
       iss: 'eyevinn',
       sub: 'jonas',
       aud: 'one',
       exp: Math.floor(Date.now() / 1000) + 120,
       iat: Math.floor(Date.now() / 1000),
-      catr: CommonAccessTokenRenewal.fromDict({
+      catr: {
         type: 'header',
         'header-name': 'cta-common-access-token',
         expadd: 120,
         deadline: 60
-      }).payload
+      },
+      catif: {
+        exp: [
+          307,
+          {
+            Location: 'https://auth.example.net/?CAT='
+          },
+          'Symmetric256'
+        ]
+      }
     },
     {
       type: 'mac',
