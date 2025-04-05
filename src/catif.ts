@@ -17,23 +17,28 @@ const valueToDict: { [key: string]: (value: any) => any } = {
     const [code, headers, kid] = value;
     const dictHeaders: { [h: string]: any } = {};
     headers.forEach((v: any, header: string) => {
-      dictHeaders[header] = valueToDict[header] ? valueToDict[header](v) : v;
+      dictHeaders[header] = valueToDict[header.toLowerCase()]
+        ? valueToDict[header.toLowerCase()](v)
+        : v;
     });
     return [code, dictHeaders, kid];
   },
   location: (value) => {
     if (typeof value === 'string') {
-      return { Location: value };
+      return value;
     } else {
       const [url, map] = value;
       const obj: { [key: string]: any } = {};
       (map as Map<string, any>).forEach((v, claim) => {
-        obj[claim] = valueToDict[claim] ? valueToDict[claim](v) : v;
+        const label = parseInt(claim);
+        obj[labelsToClaim[label]] = valueToDict[labelsToClaim[label]]
+          ? valueToDict[labelsToClaim[label]](v)
+          : v;
       });
-      return { Location: [url, obj] };
+      return [url, obj];
     }
   },
-  catu: (value) => CommonAccessTokenUri.fromUnlabeledMap(value).toDict()
+  catu: (value) => CommonAccessTokenUri.fromMap(value).toDict()
 };
 
 const dictToValue: { [key: string]: (value: any) => any } = {
@@ -43,8 +48,8 @@ const dictToValue: { [key: string]: (value: any) => any } = {
     for (const header in headers) {
       map.set(
         header,
-        dictToValue[header]
-          ? dictToValue[header](headers[header])
+        dictToValue[header.toLowerCase()]
+          ? dictToValue[header.toLowerCase()](headers[header])
           : headers[header]
       );
     }
@@ -55,10 +60,10 @@ const dictToValue: { [key: string]: (value: any) => any } = {
       return value;
     } else {
       const [url, dict] = value;
-      const lmap = new Map<string, any>();
+      const lmap = new Map<number, any>();
       for (const key in dict) {
         lmap.set(
-          key,
+          claimsToLabels[key],
           dictToValue[key] ? dictToValue[key](dict[key]) : dict[key]
         );
       }
