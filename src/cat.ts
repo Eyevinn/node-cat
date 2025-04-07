@@ -16,6 +16,7 @@ import { CommonAccessTokenRenewal } from './catr';
 import { CommonAccessTokenHeader } from './cath';
 import { CommonAccessTokenIf } from './catif';
 import { toBase64, toHex } from './util';
+import { Log } from './log';
 
 export const claimsToLabels: { [key: string]: number } = {
   iss: 1, // 3
@@ -361,14 +362,16 @@ export class CommonAccessToken {
   ): Promise<void> {
     const decoder = new cbor.Decoder({ mapsAsObjects: false });
     const coseMessage = decoder.decode(token);
-    if (process.env.DEBUG) {
-      console.dir(coseMessage, { depth: null });
-    }
+    Log(coseMessage, { depth: null });
     if (opts?.expectCwtTag && coseMessage.tag !== 61) {
       throw new Error('Expected CWT tag');
     }
     if (coseMessage.tag === CWT_TAG) {
       const cborCoseMessage = cbor.encode(coseMessage.value);
+      Log({
+        kid: key.kid,
+        key: key.k.toString('hex')
+      });
       const buf = await cose.mac.read(cborCoseMessage, key.k);
       const json = await decoder.decode(buf);
       this.payload = updateMapFromClaims(json);
