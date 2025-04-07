@@ -361,6 +361,9 @@ export class CommonAccessToken {
   ): Promise<void> {
     const decoder = new cbor.Decoder({ mapsAsObjects: false });
     const coseMessage = decoder.decode(token);
+    if (process.env.DEBUG) {
+      console.dir(coseMessage, { depth: null });
+    }
     if (opts?.expectCwtTag && coseMessage.tag !== 61) {
       throw new Error('Expected CWT tag');
     }
