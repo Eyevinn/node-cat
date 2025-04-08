@@ -343,7 +343,8 @@ export class CommonAccessToken {
       const decoded = decoder.decode(coseMessage).value;
       const coseTag = new cbor.Tag(decoded, 17);
       const cwtTag = new cbor.Tag(coseTag, CWT_TAG);
-      this.data = cbor.encode(cwtTag);
+      Log(cwtTag, { depth: null });
+      this.data = encoder.encode(cwtTag);
     } else {
       const plaintext = cbor.encode(this.payload).toString('hex');
       this.data = await cose.mac.create(headers, plaintext, recipient);

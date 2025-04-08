@@ -17,3 +17,6 @@ jobs:
         run: npm run typecheck
       - name: Run Unit Tests
         run: npm test
+        env:
+          INTEROP: true
+          OSC_ACCESS_TOKEN: ${{ secrets.OSC_ACCESS_TOKEN }}
