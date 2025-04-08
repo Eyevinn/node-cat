@@ -10,7 +10,7 @@ const runInteropTests =
 
 describe('CAT library', () => {
   testIf(
-    false && runInteropTests, // Skip this test
+    runInteropTests,
     'can generate a token that someone else can validate',
     async () => {
       const ctx = new Context();
@@ -23,12 +23,12 @@ describe('CAT library', () => {
         },
         expectCwtTag: true
       });
-      const token = await generator.generate(
+      const token = await generator.generateFromJson(
         {
           iss: 'eyevinn',
           sub: 'jonas',
           aud: 'coap://light.example.com',
-          exp: 1444064944,
+          exp: Math.floor(Date.now() / 1000) + 3600,
           nbf: 1443944944,
           iat: 1443944944,
           cti: '0b71'
