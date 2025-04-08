@@ -332,7 +332,8 @@ export class CommonAccessToken {
       key: key.k
     };
     if (!opts?.noCwtTag) {
-      const plaintext = cbor.encode(this.payload);
+      const encoder = new cbor.Encoder({ mapsAsObjects: false });
+      const plaintext = encoder.encode(this.payload);
       const coseMessage = await cose.mac.create(
         headers,
         plaintext as unknown as string,
