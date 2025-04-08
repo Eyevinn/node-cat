@@ -1,4 +1,4 @@
-import { CAT, CommonAccessTokenRenewal } from '../src';
+import { CAT } from '../src';
 
 async function main() {
   const generator = new CAT({
