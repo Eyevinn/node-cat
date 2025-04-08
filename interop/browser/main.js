@@ -19,7 +19,8 @@ async function testCAT() {
     const cat = new CAT({
       keys: {
         Symmetric256: key
-      }
+      },
+      expectCwtTag: true
     });
 
     const token = await cat.generate(
