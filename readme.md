@@ -38,6 +38,12 @@ Features:
   - Token usage count using store plugins (see further down for available plugins)
   - Log how tokens are being used with logging plugins (see further down for available plugins)
 
+Following projects (known to the maintainer) are using this library:
+
+- [CAT Validator service](https://github.com/Eyevinn/cat-validate) by Eyevinn
+
+Want your name on this list? Submit a PR or create an issue.
+
 ## Claims Validation Support
 
 ### Core Claims
