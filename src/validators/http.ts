@@ -21,6 +21,7 @@ import { ICTIStore } from '../stores/interface';
 import { ITokenLogger } from '../loggers/interface';
 import { CatIfDictValue } from '../catif';
 import { toBase64NoPadding } from '../util';
+import { Log } from '../log';
 
 interface HttpValidatorKey {
   kid: string;
@@ -459,7 +460,13 @@ export class HttpValidator {
         response.setHeader(
           catr['header-name'] || headerName,
           renewedToken +
-            (catr['header-params'] ? `;${catr['header-params']}` : '')
+            (catr['header-params']
+              ? `; ${
+                  Array.isArray(catr['header-params'])
+                    ? catr['header-params'].join('; ')
+                    : catr['header-params']
+                }`
+              : '')
         );
       } else if (
         catr.type === 'cookie' ||
@@ -468,8 +475,12 @@ export class HttpValidator {
         const cookieName = catr['cookie-name'] || 'cta-common-access-token';
         response.setHeader(
           'Set-Cookie',
-          `${cookieName}=${renewedToken}${
-            catr['cookie-params'] ? '; ' + catr['cookie-params'] : ''
+          `${cookieName}=${renewedToken}; ${
+            catr['cookie-params']
+              ? '; ' + Array.isArray(catr['cookie-params'])
+                ? catr['cookie-params'].join('; ')
+                : catr['cookie-params']
+              : ''
           }`
         );
       } else if (
