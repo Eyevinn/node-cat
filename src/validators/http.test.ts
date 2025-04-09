@@ -346,6 +346,7 @@ describe('HTTP Request CAT Validator with auto renew', () => {
           type: 'automatic',
           'header-name': 'cta-common-access-token',
           'cookie-name': 'cta-common-access-token',
+          'cookie-params': ['Secure', 'HttpOnly', 'Domain=.eyevinn.technology'],
           code: 301,
           expadd: 120,
           deadline: 60
@@ -374,6 +375,28 @@ describe('HTTP Request CAT Validator with auto renew', () => {
       ],
       issuer: 'eyevinn'
     });
+    const now = Math.floor(Date.now() / 1000);
+    base64encoded = await generator.generate(
+      {
+        iss: 'eyevinn',
+        exp: now + 60,
+        catr: CommonAccessTokenRenewal.fromDict({
+          type: 'header',
+          'header-name': 'cta-common-access-token',
+          'cookie-name': 'cta-common-access-token',
+          'header-params': ['Secure', 'HttpOnly', 'Domain=.eyevinn.technology'],
+          code: 301,
+          expadd: 120,
+          deadline: 60
+        }).payload
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
     const request = createRequest({
       method: 'GET',
       headers: {
@@ -383,7 +406,79 @@ describe('HTTP Request CAT Validator with auto renew', () => {
     const response = createResponse();
     const result = await httpValidator.validateHttpRequest(request, response);
     expect(result.status).toBe(200);
+    expect(response.getHeader('cta-common-access-token')).toMatch(
+      /^(\S+); Secure; HttpOnly; Domain=.eyevinn.technology/
+    );
     expect(response.getHeader('cta-common-access-token')).toBeDefined();
+
+    const renewDisabled = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn',
+      autoRenewEnabled: false
+    });
+    const response2 = createResponse();
+    const result2 = await renewDisabled.validateHttpRequest(request, response2);
+    expect(result2.status).toBe(200);
+    expect(response2.getHeader('cta-common-access-token')).toBeUndefined();
+  });
+
+  test('can autorenew and set cookie when autorenew is enabled', async () => {
+    // Validate and auto renew
+    const httpValidator = new HttpValidator({
+      keys: [
+        {
+          kid: 'Symmetric256',
+          key: Buffer.from(
+            '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+            'hex'
+          )
+        }
+      ],
+      issuer: 'eyevinn'
+    });
+    const now = Math.floor(Date.now() / 1000);
+    base64encoded = await generator.generateFromJson(
+      {
+        iss: 'eyevinn',
+        exp: now + 60,
+        catr: {
+          type: 'cookie',
+          'header-name': 'cta-common-access-token',
+          'cookie-name': 'cta-common-access-token',
+          'cookie-params': ['Secure', 'HttpOnly', 'Domain=.eyevinn.technology'],
+          code: 301,
+          expadd: 120,
+          deadline: 60
+        }
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256',
+        generateCwtId: true
+      }
+    );
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        'CTA-Common-Access-Token': base64encoded
+      }
+    });
+    const response = createResponse();
+    const result = await httpValidator.validateHttpRequest(request, response);
+    expect(result.status).toBe(200);
+    expect(response.getHeader('set-cookie')).toBeDefined();
+    expect(response.getHeader('set-cookie')).toMatch(
+      /^cta-common-access-token=(\S+); Secure; HttpOnly; Domain=.eyevinn.technology/
+    );
 
     const renewDisabled = new HttpValidator({
       keys: [
@@ -413,6 +508,7 @@ describe('HTTP Request CAT Validator with auto renew', () => {
           type: 'automatic',
           'header-name': 'cta-common-access-token',
           'cookie-name': 'cta-common-access-token',
+          'cookie-params': ['Secure', 'HttpOnly', 'Domain=.a2d.tv'],
           code: 302,
           expadd: 120,
           deadline: 60
