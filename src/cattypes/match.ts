@@ -40,6 +40,18 @@ export const labelsToMatch: { [key: number]: MatchType } = {
   '-2': 'sha512-256-match'
 };
 
+export const matchTypeValidator: {
+  [key: string]: (value: MatchValue) => boolean;
+} = {
+  'exact-match': (value: MatchValue) => typeof value === 'string',
+  'prefix-match': (value: MatchValue) => typeof value === 'string',
+  'suffix-match': (value: MatchValue) => typeof value === 'string',
+  'contains-match': (value: MatchValue) => typeof value === 'string',
+  'regex-match': (value: MatchValue) => Array.isArray(value),
+  'sha256-match': (value: MatchValue) => typeof value === 'string',
+  'sha512-256-match': (value: MatchValue) => typeof value === 'string'
+};
+
 export class MatchTypeError extends Error {
   constructor(message: string) {
     super(message);

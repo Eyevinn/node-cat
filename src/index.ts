@@ -3,7 +3,7 @@ import {
   CommonAccessTokenDict,
   CommonAccessTokenFactory
 } from './cat';
-import { KeyNotFoundError } from './errors';
+import { InvalidCatuError, KeyNotFoundError } from './errors';
 import { fromBase64Url, generateRandomHex, toBase64NoPadding } from './util';
 
 export { CommonAccessToken } from './cat';

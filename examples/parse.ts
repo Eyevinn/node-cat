@@ -10,7 +10,8 @@ async function main() {
     }
   });
   const result = await parser.validate(process.argv[2], 'mac', {
-    issuer: 'eyevinn'
+    issuer: 'eyevinn',
+    url: process.argv[3] ? new URL(process.argv[3]) : undefined
   });
   console.dir(result, { depth: null });
 }

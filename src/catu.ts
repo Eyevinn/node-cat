@@ -4,6 +4,7 @@ import {
   match,
   matchToLabels,
   MatchType,
+  matchTypeValidator,
   MatchValue
 } from './cattypes/match';
 
@@ -121,6 +122,11 @@ export class CommonAccessTokenUri {
       const uriPartType = labelsToUriPart[uriPart];
       const matchLabel = uriPartMap.keys().next().value;
       let matchValue = uriPartMap.get(matchLabel!);
+      if (!matchTypeValidator[labelsToMatch[matchLabel!]](matchValue!)) {
+        throw new InvalidCatuError(
+          `Invalid match value type for ${labelsToMatch[matchLabel!]}`
+        );
+      }
       let value;
       switch (uriPartType) {
         case 'scheme':
