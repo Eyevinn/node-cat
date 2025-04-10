@@ -4,6 +4,7 @@ import {
   match,
   matchToLabels,
   MatchType,
+  matchTypeValidator,
   MatchValue
 } from './cattypes/match';
 
@@ -120,7 +121,12 @@ export class CommonAccessTokenUri {
     for (const [uriPart, uriPartMap] of this.catuMap) {
       const uriPartType = labelsToUriPart[uriPart];
       const matchLabel = uriPartMap.keys().next().value;
-      const matchValue = uriPartMap.get(matchLabel!);
+      let matchValue = uriPartMap.get(matchLabel!);
+      if (!matchTypeValidator[labelsToMatch[matchLabel!]](matchValue!)) {
+        throw new InvalidCatuError(
+          `Invalid match value type for ${labelsToMatch[matchLabel!]}`
+        );
+      }
       let value;
       switch (uriPartType) {
         case 'scheme':
@@ -139,7 +145,13 @@ export class CommonAccessTokenUri {
           {
             const params = new URLSearchParams(uri.search);
             params.delete('cat');
+            params.sort();
             value = params.toString();
+            const matchValueParams = new URLSearchParams(
+              '?' + (matchValue as string)
+            );
+            matchValueParams.sort();
+            matchValue = matchValueParams.toString();
           }
           break;
         case 'parent-path':

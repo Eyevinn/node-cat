@@ -239,4 +239,14 @@ describe('Common Access Token Uri', () => {
     expect(await catu.match(uri)).toBeTruthy();
     expect(await catu.match(uri2)).toBeTruthy();
   });
+
+  test('can match query params', async () => {
+    const catu = CommonAccessTokenUri.fromDict({
+      query: {
+        'exact-match': 'z=z&x=true&y=false'
+      }
+    });
+    const uri = new URL('https://example.com/path?y=false&x=true&z=z');
+    expect(await catu.match(uri)).toBeTruthy();
+  });
 });
