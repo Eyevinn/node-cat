@@ -331,8 +331,8 @@ export class CommonAccessToken {
     const recipient = {
       key: key.k
     };
+    const encoder = new cbor.Encoder({ mapsAsObjects: false });
     if (!opts?.noCwtTag) {
-      const encoder = new cbor.Encoder({ mapsAsObjects: false });
       const plaintext = encoder.encode(this.payload);
       const coseMessage = await cose.mac.create(
         headers,
@@ -346,7 +346,7 @@ export class CommonAccessToken {
       Log(cwtTag, { depth: null });
       this.data = encoder.encode(cwtTag);
     } else {
-      const plaintext = cbor.encode(this.payload).toString('hex');
+      const plaintext = encoder.encode(this.payload).toString('hex');
       this.data = await cose.mac.create(headers, plaintext, recipient);
     }
     this.kid = key.kid;
@@ -369,7 +369,8 @@ export class CommonAccessToken {
       throw new Error('Expected CWT tag');
     }
     if (coseMessage.tag === CWT_TAG) {
-      const cborCoseMessage = cbor.encode(coseMessage.value);
+      const encoder = new cbor.Encoder({ mapsAsObjects: false });
+      const cborCoseMessage = encoder.encode(coseMessage.value);
       Log({
         kid: key.kid,
         key: key.k.toString('hex')
@@ -387,7 +388,8 @@ export class CommonAccessToken {
   }
 
   public async sign(key: CWTSigningKey, alg: string): Promise<void> {
-    const plaintext = cbor.encode(this.payload).toString('hex');
+    const encoder = new cbor.Encoder({ mapsAsObjects: false });
+    const plaintext = encoder.encode(this.payload).toString('hex');
     const headers = {
       p: { alg: alg },
       u: { kid: key.kid }
@@ -403,7 +405,10 @@ export class CommonAccessToken {
     key: CWTVerifierKey
   ): Promise<CommonAccessToken> {
     const buf = await cose.sign.verify(token, { key: key });
-    this.payload = await cbor.decode(Buffer.from(buf.toString('hex'), 'hex'));
+    const decoder = new cbor.Decoder({ mapsAsObjects: false });
+    this.payload = await decoder.decode(
+      Buffer.from(buf.toString('hex'), 'hex')
+    );
     return this;
   }
 
