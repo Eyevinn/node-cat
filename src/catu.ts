@@ -147,8 +147,11 @@ export class CommonAccessTokenUri {
             params.delete('cat');
             params.sort();
             value = params.toString();
+            const matchValueString = matchValue as string;
             const matchValueParams = new URLSearchParams(
-              '?' + (matchValue as string)
+              !matchValueString.startsWith('?')
+                ? '?' + matchValueString
+                : matchValueString
             );
             matchValueParams.sort();
             matchValue = matchValueParams.toString();
