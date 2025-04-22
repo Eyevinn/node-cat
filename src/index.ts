@@ -3,6 +3,9 @@ import {
   CommonAccessTokenDict,
   CommonAccessTokenFactory
 } from './cat';
+
+import { Tag } from 'cbor-x';
+
 import { KeyNotFoundError } from './errors';
 import { fromBase64Url, generateRandomHex, toBase64NoPadding } from './util';
 
@@ -221,7 +224,7 @@ export class CAT {
   }
 
   public async generate(
-    claims: { [key: string]: string | number | Map<number, any> },
+    claims: { [key: string]: string | number | Map<number, any> | Array<number | Tag | any> },
     opts?: CatGenerateOptions
   ) {
     if (opts?.generateCwtId && !claims['cti']) {
@@ -280,6 +283,7 @@ export class CAT {
      */
     opts?: CatGenerateOptions
   ) {
+    
     if (opts?.generateCwtId && !dict['cti']) {
       dict['cti'] = generateRandomHex(16);
     }

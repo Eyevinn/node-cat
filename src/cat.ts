@@ -1,5 +1,8 @@
 import * as cbor from 'cbor-x';
+import { Tag } from 'cbor-x';
 import cose from 'cose-js';
+import ipaddr, { IPv4, IPv6 } from 'ipaddr.js';
+
 import {
   InvalidAudienceError,
   InvalidClaimTypeError,
@@ -15,6 +18,8 @@ import { CommonAccessTokenUri } from './catu';
 import { CommonAccessTokenRenewal } from './catr';
 import { CommonAccessTokenHeader } from './cath';
 import { CommonAccessTokenIf } from './catif';
+import { CommonAccessTokenNetworkIP,  isASN } from './catnip';
+
 import { toBase64, toHex } from './util';
 import { Log } from './log';
 
@@ -96,7 +101,7 @@ const claimTypeValidators: {
   catreplay: (value) => typeof value === 'number',
   catpor: (value) => Array.isArray(value),
   catv: (value) => typeof value === 'number' && value >= 1,
-  catnip: (value) => typeof value === 'number' || typeof value === 'string',
+  catnip: (value) => Array.isArray(value),// TODO: axel //&& value.every((ip) => (typeof ip === 'number' || typeof ip === 'string')),
   catu: (value) => value instanceof Map,
   catm: (value) => Array.isArray(value),
   cath: (value) => value instanceof Map,
@@ -112,8 +117,11 @@ const claimTypeValidators: {
   catr: (value) => value instanceof Map
 };
 
+
 const isHex = (value: string) => /^[0-9a-fA-F]+$/.test(value);
-const isNetworkIp = (value: string) => /^[0-9a-fA-F:.]+$/.test(value);
+//const isNetworkIp = (value: string) => /^[0-9a-fA-F:.]+$/.test(value);
+const isValidNetwork = (value: string) => ipaddr.isValid(value) || ipaddr.isValidCIDR(value);
+const isValidAsn = (value: string|number) => isASN(value);
 
 const claimTypeDictValidators: {
   [key: string]: (value: unknown) => boolean;
@@ -126,9 +134,8 @@ const claimTypeDictValidators: {
   catreplay: (value) => typeof value === 'number' && value >= 0,
   catpor: (value) => Array.isArray(value),
   catv: (value) => typeof value === 'number' && value >= 1,
-  catnip: (value) =>
-    typeof value === 'number' ||
-    (typeof value === 'string' && isNetworkIp(value)),
+  catnip: (value) => Array.isArray(value) && value.every((x) => isValidNetwork(x) || isValidAsn(x)),    
+    //(x) => isNetworkIp(x) || (typeof value === 'number' || typeof value === 'string' )),
   catu: (value) => typeof value === 'object',
   catm: (value) => Array.isArray(value),
   cath: (value) => typeof value === 'object',
@@ -151,16 +158,19 @@ const CWT_TAG = 61;
  * Common Access Token Claims
  */
 export type CommonAccessTokenClaims = {
-  [key: string]: string | number | Map<number | string, any>;
+  [key: string]: string | number | Map<number | string, any> | Array<number | string> | Array<string> | Array<number | Tag>;
 };
 export type CommonAccessTokenDict = {
-  [key: string]: string | number | { [key: string]: any };
+  [key: string]: string | number | { [key: string]: any } | Array<string | number>;
 };
 export type CommonAccessTokenValue =
   | string
   | number
   | Buffer
-  | Map<number | string, any>;
+  | Map<number | string, any>
+  | Array<number | string>
+  | Array<number | Tag>
+  | Array<string>
 
 /**
  * CWT Encryption Key
@@ -240,6 +250,14 @@ function updateMapFromClaims(
         key,
         CommonAccessTokenIf.fromDictTags(dict[param] as any).payload
       );
+    } else if (
+      key === claimsToLabels['catnip'] &&
+      !(dict[param] as Array<string | Tag | number>)
+    ) {
+      map.set(
+        key,
+        CommonAccessTokenNetworkIP.createCatnipFromArray(dict[param] as Array<number | string>).payload
+      );
     } else {
       const k = param.match(/\d+/) ? labelsToClaim[parseInt(param)] : param;
       const value = claimTransform[k]
@@ -279,6 +297,8 @@ function updateMapFromDict(
       claims[key] = CommonAccessTokenIf.fromDict(
         dict[param] as { [key: string]: any }
       ).payload;
+    } else if (param == 'catnip') {      
+      claims[key] = CommonAccessTokenNetworkIP.createCatnipFromArray(dict[param] as any).payload;
     } else {
       const value = claimTransform[param]
         ? claimTransform[param](dict[param] as string)
@@ -463,7 +483,7 @@ export class CommonAccessToken {
       const value = this.payload.get(claimsToLabels['aud']);
       if (value) {
         const claimAud = Array.isArray(value) ? value : [value];
-        if (!opts.audience.some((item) => claimAud.includes(item))) {
+        if (!opts.audience.some((item) => claimAud.includes(item as any))) {
           throw new InvalidAudienceError(claimAud as string[]);
         }
       }
@@ -493,6 +513,14 @@ export class CommonAccessToken {
       if (!catr.isValid()) {
         throw new RenewalClaimError('Invalid renewal claim');
       }
+    }    
+    if (this.payload.get(claimsToLabels['catnip'])) {
+      const catnip = CommonAccessTokenNetworkIP.fromArray(
+        this.payload.get(claimsToLabels['catnip']) as Array<any>
+      );
+      
+      // TODO: Axel
+      //catnip.isValid(opts.ip)
     }
 
     return true;
@@ -548,6 +576,9 @@ export class CommonAccessToken {
         result[key] = CommonAccessTokenIf.fromMap(
           value as Map<number, any>
         ).toDict();
+      } else if (key === 'catnip') {
+        // TODO: Axel
+        result[key] = CommonAccessTokenNetworkIP.fromArray(value as Array<any>).toArray();
       } else {
         const theValue = claimTransformReverse[key]
           ? claimTransformReverse[key](value as Buffer)

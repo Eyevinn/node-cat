@@ -69,7 +69,9 @@ describe('CAT', () => {
       catreplay: 0,
       catpor: ['.00005', '087ee44f239f7a2e34b3d1649aad8c1d', 1700000000],
       catv: 1,
-      catnip: '192.168.1.11',
+      catnip: [
+        '192.168.1.10'
+      ],
       catu: {
         scheme: {
           'exact-match': 'https'
