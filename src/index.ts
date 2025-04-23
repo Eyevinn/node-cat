@@ -46,6 +46,14 @@ export interface CatValidationOptions {
    * Request URL associated with the token
    */
   url?: URL;
+  /**
+   * Request IP associated with the token
+   */
+  ip?: string;
+  /**
+   * Request Autonomus System Number associated with the token
+   */
+  asn?: number;
 }
 
 /**

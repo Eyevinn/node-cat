@@ -1,9 +1,9 @@
 import * as cbor from 'cbor-x';
 import { Tag } from 'cbor-x';
 import cose from 'cose-js';
-import ipaddr, { IPv4, IPv6 } from 'ipaddr.js';
+import ipaddr from 'ipaddr.js';
 
-import {
+import {  
   InvalidAudienceError,
   InvalidClaimTypeError,
   InvalidIssuerError,
@@ -11,7 +11,9 @@ import {
   RenewalClaimError,
   TokenExpiredError,
   TokenNotActiveError,
-  UriNotAllowedError
+  UriNotAllowedError,
+  IPNotAllowed,
+  AsnNotAllowed
 } from './errors';
 import { CatValidationOptions } from '.';
 import { CommonAccessTokenUri } from './catu';
@@ -101,7 +103,7 @@ const claimTypeValidators: {
   catreplay: (value) => typeof value === 'number',
   catpor: (value) => Array.isArray(value),
   catv: (value) => typeof value === 'number' && value >= 1,
-  catnip: (value) => Array.isArray(value),// TODO: axel //&& value.every((ip) => (typeof ip === 'number' || typeof ip === 'string')),
+  catnip: (value) => Array.isArray(value) && (value as Array<any>).every((catnipObject) => (typeof catnipObject === 'number' || catnipObject instanceof Tag)),
   catu: (value) => value instanceof Map,
   catm: (value) => Array.isArray(value),
   cath: (value) => value instanceof Map,
@@ -119,8 +121,22 @@ const claimTypeValidators: {
 
 
 const isHex = (value: string) => /^[0-9a-fA-F]+$/.test(value);
-//const isNetworkIp = (value: string) => /^[0-9a-fA-F:.]+$/.test(value);
-const isValidNetwork = (value: string) => ipaddr.isValid(value) || ipaddr.isValidCIDR(value);
+const isValidIP = (value: string) => {
+  try {
+    return ipaddr.isValid(value);
+  } catch(error: any) {
+    return false;
+  }
+}
+
+const isValidCIDR = (value: string) => {
+  try {
+    return ipaddr.isValidCIDR(value);
+  } catch (error: any) {
+    return false;
+  }  
+}
+
 const isValidAsn = (value: string|number) => isASN(value);
 
 const claimTypeDictValidators: {
@@ -134,8 +150,7 @@ const claimTypeDictValidators: {
   catreplay: (value) => typeof value === 'number' && value >= 0,
   catpor: (value) => Array.isArray(value),
   catv: (value) => typeof value === 'number' && value >= 1,
-  catnip: (value) => Array.isArray(value) && value.every((x) => isValidNetwork(x) || isValidAsn(x)),    
-    //(x) => isNetworkIp(x) || (typeof value === 'number' || typeof value === 'string' )),
+  catnip: (value) => Array.isArray(value) && value.every((catnipObject) => isValidAsn(catnipObject) || isValidIP(catnipObject) || isValidCIDR(catnipObject)),
   catu: (value) => typeof value === 'object',
   catm: (value) => Array.isArray(value),
   cath: (value) => typeof value === 'object',
@@ -251,9 +266,8 @@ function updateMapFromClaims(
         CommonAccessTokenIf.fromDictTags(dict[param] as any).payload
       );
     } else if (
-      key === claimsToLabels['catnip'] &&
-      !(dict[param] as Array<string | Tag | number>)
-    ) {
+      key === claimsToLabels['catnip'] && !(dict[param] as Array<any>).every((catnipObject) => (typeof catnipObject === 'number' || catnipObject instanceof Tag))        
+    ){
       map.set(
         key,
         CommonAccessTokenNetworkIP.createCatnipFromArray(dict[param] as Array<number | string>).payload
@@ -518,9 +532,16 @@ export class CommonAccessToken {
       const catnip = CommonAccessTokenNetworkIP.fromArray(
         this.payload.get(claimsToLabels['catnip']) as Array<any>
       );
+      if (!opts.ip) {
+        throw new IPNotAllowed("IP not provided");
+      }
+      if (!catnip.ipMatch(opts.ip)) {
+        throw new IPNotAllowed("IP does not match catnip claims");
+      }
       
-      // TODO: Axel
-      //catnip.isValid(opts.ip)
+      if(opts.asn && !catnip.asnMatch(opts.asn)) {
+        throw new AsnNotAllowed("Autonomus System Number does not match the claim");
+      }
     }
 
     return true;
@@ -577,7 +598,6 @@ export class CommonAccessToken {
           value as Map<number, any>
         ).toDict();
       } else if (key === 'catnip') {
-        // TODO: Axel
         result[key] = CommonAccessTokenNetworkIP.fromArray(value as Array<any>).toArray();
       } else {
         const theValue = claimTransformReverse[key]

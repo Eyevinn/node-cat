@@ -1,7 +1,6 @@
 
-
 import { Tag } from "cbor-x";
-import ipaddr, { IPv4, IPv6, parse } from "ipaddr.js";
+import ipaddr, { IPv4, IPv6 } from "ipaddr.js";
 
 const CatnipIPVersionToLabel: { [key: string]: number} = {
     IPv4: 52,
@@ -13,41 +12,54 @@ const CatnipLabelToIPVersion: { [key: number]: string } = {
     54: "ipv6"
 }
 
-//type CatnipPartValue = number | 
-//type CatnipPartMap = Map<number, 
 
-/*
-export type PrefixPart = Array<number | Buffer>;
-export type IPPrefix = Map<number, PrefixPart>;
-export type IPAddress = Map<number, number | Buffer>;
+const IPAddressKind: { [key: string]: string} = {
+    "IPv4": "ipv4",
+    "IPv6": "ipv6"
+}
+
 export type ASN = number;
-*/ 
-
-//type CatnipObject = ASN | IPAddress | IPPrefix;
-
-//export type CommonAccessTokenNetworkIPArray = Array<ASN | IPAddress | IPPrefix | Tag>;
-export type CommonAccessTokenNetworkIPArray = Array<number | Tag>; 
+export type CatnipObject = ASN | Tag
+export type CommonAccessTokenNetworkIPArray = Array<CatnipObject>; 
 
 export function isASN(value: string | number) {
     const asn = typeof value === 'string' ? parseInt(value) : value;
-    return !Number.isNaN(asn) && (
-    (asn >= 1 && asn <= 65434) ||
-    (asn >= 131072 && asn <= 4294967294) 
-    )
+    return !Number.isNaN(asn) && ((asn >= 0 && asn <= 0xffffffff))
 }
 
 export function ipToNumber(ip : IPv4| IPv6) {
     return Buffer.from(Uint8Array.from(ip.toByteArray()));
 }
 
+export function ipV6AddressToRFC5952String(ipv6AddressOrIPPrefix: string) : string {
+    if (IPv6.isValid(ipv6AddressOrIPPrefix)) {
+      return IPv6.parse(ipv6AddressOrIPPrefix).toRFC5952String();
+    } else if (IPv6.isValidCIDR(ipv6AddressOrIPPrefix)) {
+      const [ip, cidr] = IPv6.parseCIDR(ipv6AddressOrIPPrefix);
+      return `${ip.toRFC5952String()}/${cidr}`;
+    }
+    throw new Error("Not valid IPv6 address or prefix");
+  }
+  
+export function normalizeIPv6Address(ipv6AddressOrIPPrefix: string) : string {
+    if (IPv6.isValid(ipv6AddressOrIPPrefix)) {
+      return IPv6.parse(ipv6AddressOrIPPrefix).toNormalizedString();
+    } else if (IPv6.isValidCIDR(ipv6AddressOrIPPrefix)) {
+      const [ip, cidr ] = IPv6.parseCIDR(ipv6AddressOrIPPrefix);
+      return `${ip.toNormalizedString()}/${cidr}`;
+    }
+    throw new Error("Not valid IPv6 address or prefix");
+  }
+
+
 export class CommonAccessTokenNetworkIP {
-    private catnipArray: CommonAccessTokenNetworkIPArray = new Array();
+    private catnipArray: CommonAccessTokenNetworkIPArray = new Array<CatnipObject>();
 
     /**
      * Create catnip claim string array from array of catnip tags, and number
      */
-    public static readCatnipClaimsFromTags(arrayOfASNOrIPorIPPrefix: Array<number | Tag>) : Array<any> {
-        const catnipClaims = new Array<any>;
+    public static readCatnipClaimsFromTags(arrayOfASNOrIPorIPPrefix: Array<CatnipObject>) : Array<number | string> {
+        const catnipClaims = new Array<number | string>;
         for (let catnipObject of arrayOfASNOrIPorIPPrefix) {
             if (typeof catnipObject === 'number') {
                 catnipClaims.push(catnipObject);
@@ -85,6 +97,7 @@ export class CommonAccessTokenNetworkIP {
     public static createCatnipFromArray(catnipObjectsAsStringOrNumber: Array<number | string>) : CommonAccessTokenNetworkIP {
         const catnip = new CommonAccessTokenNetworkIP();
         const catnipParsed = catnipObjectsAsStringOrNumber.map((x) => {return typeof x === 'number' ? x.toString() : x;});
+
         for (let catnipString of catnipParsed) {
             if (!catnipString.includes(".") &&
                 !catnipString.includes(":") && 
@@ -119,6 +132,49 @@ export class CommonAccessTokenNetworkIP {
 
     get payload() {
         return this.catnipArray;
+    }
+
+    public ipMatch(ip: string) : boolean {
+        try {
+            const ipAddr = ipaddr.parse(ip);
+            return this.catnipArray.filter((catnipObject) => {
+                if (typeof catnipObject === 'number') return false;
+                if (!(catnipObject instanceof Tag)) return false;
+                return true;
+            }).map((co) => {
+                const catnipObject = (co as Tag);
+                const value = catnipObject.value;
+                    if (catnipObject.tag == CatnipIPVersionToLabel.IPv4 && ipAddr.kind() === IPAddressKind.IPv4) {
+                        if (value instanceof Array) {
+                            const [cidr, ipv4Buffer] = catnipObject.value;
+                            const ip = ipaddr.fromByteArray(ipv4Buffer)
+                            return ipAddr.match(ip,cidr);
+                        } else if (value instanceof Buffer) {
+                            const ip = ipaddr.fromByteArray([...value]);
+                            return ipAddr.match(ip, 32);
+                        }
+                    } else if (catnipObject.tag == CatnipIPVersionToLabel.IPv6 && ipAddr.kind() === IPAddressKind.IPv6) {
+                        if (value instanceof Array) {
+                            const [cidr, ipv6Buffer] = catnipObject.value;
+                            const ip = ipaddr.fromByteArray(ipv6Buffer);
+                            return ipAddr.match(ip, cidr);
+                        } else if (value instanceof Buffer) {
+                            const ip = ipaddr.fromByteArray([...value]);
+                            return ipAddr.match(ip, 128);
+                        }
+                    }
+                    return false;
+            }).some((matchingIPorPrefix) => matchingIPorPrefix === true);
+        } catch (error: any) {
+            return false;
+        }
+    }
+
+    public asnMatch(asn: number) : boolean {
+        return this.catnipArray.filter((catnipObject) => {
+            if (typeof catnipObject === 'number') return true;
+            return false;
+        }).some((catnipObject) => asn === catnipObject);
     }
 }
 

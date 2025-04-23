@@ -616,4 +616,62 @@ describe('CAT claims', () => {
     });
     expect((result2.cat?.claims.exp as number) - now == 120).toBeTruthy();
   });
+
+  test('can generate a token with catnip and verify it', async () => {
+    const generator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+
+    const ipAddressAndPrefix = [
+      '192.168.1.10',
+      '192.168.1.0/24',
+      4321,
+      1234,
+      '192.168.1.0/24',
+      '192.168.0.0/24',
+      '192.168.0.1',
+      '2001:db8:f3c2:156a:e391:7ba4:970f:12bf',
+      '2001:db8:0:2000:0:0:0:0/56'
+    ];
+
+    const base64encoded = await generator.generate(
+      {
+        iss: 'coap://as.example.com',
+        catnip: ipAddressAndPrefix
+      },
+      {
+        type: 'mac',
+        alg: 'HS256',
+        kid: 'Symmetric256'
+      }
+    );
+    expect(isBase64UrlEncoded(base64encoded!)).toBeTruthy();
+    const validator = new CAT({
+      keys: {
+        Symmetric256: Buffer.from(
+          '403697de87af64611c1d32a05dab0fe1fcb715a86ab435f1ec99192d79569388',
+          'hex'
+        )
+      },
+      expectCwtTag: true
+    });
+    const result = await validator.validate(base64encoded!, 'mac', {
+      issuer: 'coap://as.example.com',
+      ip: '2001:db8:f3c2:156a:e391:7ba4:970f:12bf',
+      asn: 4321
+    });
+    expect(result.error).not.toBeDefined();
+    expect(result.cat).toBeDefined();
+    expect(result.cat!.claims).toEqual({
+      iss: 'coap://as.example.com',
+      catnip: ipAddressAndPrefix,
+      catv: 1
+    });
+  });
 });
