@@ -60,7 +60,7 @@ Want your name on this list? Submit a PR or create an issue.
 | Common Access Token Replay (`catreplay`)                  | Yes          | Yes      |
 | Common Access Token Probability of Rejection (`catpor`)   | Yes          | No       |
 | Common Access Token Version (`catv`)                      | Yes          | Yes      |
-| Common Access Token Network IP (`catnip`)                 | Yes          | No       |
+| Common Access Token Network IP (`catnip`)                 | Yes          | Yes      |
 | Common Access Token URI (`catu`)                          | Yes          | Yes      |
 | Common Access Token Methods (`catm`)                      | Yes          | Yes      |
 | Common Access Token ALPN (`catalpn`)                      | No           | No       |
