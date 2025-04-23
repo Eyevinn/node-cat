@@ -62,7 +62,7 @@ export class CommonAccessTokenNetworkIP {
     arrayOfASNOrIPorIPPrefix: Array<CatnipObject>
   ): Array<number | string> {
     const catnipClaims = new Array<number | string>();
-    for (let catnipObject of arrayOfASNOrIPorIPPrefix) {
+    for (const catnipObject of arrayOfASNOrIPorIPPrefix) {
       if (typeof catnipObject === 'number') {
         catnipClaims.push(catnipObject);
       } else if (catnipObject instanceof Tag) {
@@ -104,7 +104,7 @@ export class CommonAccessTokenNetworkIP {
       return typeof x === 'number' ? x.toString() : x;
     });
 
-    for (let catnipString of catnipParsed) {
+    for (const catnipString of catnipParsed) {
       if (
         !catnipString.includes('.') &&
         !catnipString.includes(':') &&
