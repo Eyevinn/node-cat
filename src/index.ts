@@ -3,6 +3,9 @@ import {
   CommonAccessTokenDict,
   CommonAccessTokenFactory
 } from './cat';
+
+import { Tag } from 'cbor-x';
+
 import { KeyNotFoundError } from './errors';
 import { fromBase64Url, generateRandomHex, toBase64NoPadding } from './util';
 
@@ -43,6 +46,14 @@ export interface CatValidationOptions {
    * Request URL associated with the token
    */
   url?: URL;
+  /**
+   * Request IP associated with the token
+   */
+  ip?: string;
+  /**
+   * Request Autonomous System Number associated with the token
+   */
+  asn?: number;
 }
 
 /**
@@ -221,7 +232,13 @@ export class CAT {
   }
 
   public async generate(
-    claims: { [key: string]: string | number | Map<number, any> },
+    claims: {
+      [key: string]:
+        | string
+        | number
+        | Map<number, any>
+        | Array<number | Tag | any>;
+    },
     opts?: CatGenerateOptions
   ) {
     if (opts?.generateCwtId && !claims['cti']) {

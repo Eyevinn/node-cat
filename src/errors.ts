@@ -116,3 +116,20 @@ export class InvalidCatIfError extends Error {
     super(reason);
   }
 }
+/**
+ * Error thrown when client IP does not match allowed IP or Network
+ */
+export class IPNotAllowed extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}
+
+/**
+ * Error thrown when client ASN number does not match allowed ASN
+ */
+export class AsnNotAllowed extends Error {
+  constructor(reason: string) {
+    super(reason);
+  }
+}
