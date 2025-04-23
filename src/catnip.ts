@@ -93,8 +93,6 @@ export class CommonAccessTokenNetworkIP {
 
   /**
    * Create a CATNIP claim from a array of (strings or numbers). (asn, IPv4 address, IPv6 address, IPv4 prefix, IPv6 prefix).
-   * @param catnip
-   * @returns
    */
   public static createCatnipFromArray(
     catnipObjectsAsStringOrNumber: Array<number | string>
