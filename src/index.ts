@@ -51,7 +51,7 @@ export interface CatValidationOptions {
    */
   ip?: string;
   /**
-   * Request Autonomus System Number associated with the token
+   * Request Autonomous System Number associated with the token
    */
   asn?: number;
 }

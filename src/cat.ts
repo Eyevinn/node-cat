@@ -540,7 +540,7 @@ export class CommonAccessToken {
       }
       
       if(opts.asn && !catnip.asnMatch(opts.asn)) {
-        throw new AsnNotAllowed("Autonomus System Number does not match the claim");
+        throw new AsnNotAllowed("Autonomous System Number does not match the claim");
       }
     }
 
