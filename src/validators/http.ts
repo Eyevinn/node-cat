@@ -208,7 +208,8 @@ export class HttpValidator {
     response?: OutgoingMessage
   ): Promise<HttpResponse> {
     const validator = new CAT({
-      keys: this.keys
+      keys: this.keys,
+      expectCwtTag: true
     });
 
     let url: URL | undefined = undefined;
