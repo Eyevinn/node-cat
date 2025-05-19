@@ -176,7 +176,11 @@ export class HttpValidator {
         }
       });
     }
-    requestLike.url = cfRequest.uri;
+    if (cfRequest.querystring) {
+      requestLike.url = `${cfRequest.uri}?${cfRequest.querystring}`;
+    } else {
+      requestLike.url = cfRequest.uri;
+    }
 
     const result = await this.validateHttpRequest(
       requestLike as IncomingMessage,
