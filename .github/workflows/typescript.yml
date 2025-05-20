@@ -18,5 +18,4 @@ jobs:
       - name: Run Unit Tests
         run: npm test
         env:
-          INTEROP: ${{ secrets.OSC_ACCESS_TOKEN != null }}
           OSC_ACCESS_TOKEN: ${{ secrets.OSC_ACCESS_TOKEN }}
