@@ -1,5 +1,5 @@
 import { createRequest, createResponse } from 'node-mocks-http';
-import { HttpValidator, NoTokenFoundError } from './http';
+import { findToken, HttpValidator, NoTokenFoundError } from './http';
 import {
   CAT,
   CommonAccessToken,
@@ -1145,5 +1145,25 @@ describe('HTTP Request CAT Validator with store', () => {
       }
     });
     expect(cfResult.status).toBe(401);
+  });
+});
+
+describe('HTTP Request CAT Validator Utils', () => {
+  test('can find a token in a cookie', () => {
+    const request = createRequest({
+      method: 'GET',
+      headers: {
+        cookie:
+          'cookie1=foo; cookie2=bar; cookie3=tjo; CTA-Common-Access-Token=2D3RhFGiAQUETFN5bW1ldHJpYzI1NqBY-qcBZ2V5ZXZpbm4CeF41NmE1OGQ4OS0yYWJjLTRmZGMtOTM0Yy1jNzk5ODk0ZGIyNjc6NzEyZGUzYWJmMjgyMDMyYzdjMjY6OGEzMTg0M2YtNGIxZi00ODY4LWIyMzQtNjQxNTI2ZDAxMWU4BBpoMBvFBRpoMBuJBhpoMBuJB1gkYzdhNDlmZmQtY2M3OS00Y2U1LTkzMzEtNmIxMjZiY2RkMWRkGQFDpQABARg8AhgeA3dDVEEtQ29tbW9uLUFjY2Vzcy1Ub2tlbgWEZlNlY3VyZXJEb21haW49LnR2NHBsYXkuc2VmcGF0aD0vbVNhbWVTaXRlPU5vbmVYICmzyUJdc5QJKHDrqakTajuSnARci7xvCaAeb212P3Lr;'
+      }
+    });
+    const { token, catrType } = findToken(
+      request,
+      'cta-common-access-token',
+      'cat'
+    );
+    expect(token).toEqual(
+      '2D3RhFGiAQUETFN5bW1ldHJpYzI1NqBY-qcBZ2V5ZXZpbm4CeF41NmE1OGQ4OS0yYWJjLTRmZGMtOTM0Yy1jNzk5ODk0ZGIyNjc6NzEyZGUzYWJmMjgyMDMyYzdjMjY6OGEzMTg0M2YtNGIxZi00ODY4LWIyMzQtNjQxNTI2ZDAxMWU4BBpoMBvFBRpoMBuJBhpoMBuJB1gkYzdhNDlmZmQtY2M3OS00Y2U1LTkzMzEtNmIxMjZiY2RkMWRkGQFDpQABARg8AhgeA3dDVEEtQ29tbW9uLUFjY2Vzcy1Ub2tlbgWEZlNlY3VyZXJEb21haW49LnR2NHBsYXkuc2VmcGF0aD0vbVNhbWVTaXRlPU5vbmVYICmzyUJdc5QJKHDrqakTajuSnARci7xvCaAeb212P3Lr'
+    );
   });
 });
